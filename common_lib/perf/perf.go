@@ -1,10 +1,9 @@
 package perf
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/pprof"
-
-	"github.com/thinkboy/log4go"
 )
 
 func Init(profBind []string) {
@@ -17,7 +16,7 @@ func Init(profBind []string) {
 	for _, addr := range profBind {
 		go func() {
 			if err := http.ListenAndServe(addr, pprofServeMux); err != nil {
-				log4go.Error("http.ListenAndServe(\"%s\", pprofServeMux) error(%v)", addr, err)
+				fmt.Printf("http.ListenAndServe(\"%s\", pprofServeMux) error(%v)", addr, err)
 				panic(err)
 			}
 		}()

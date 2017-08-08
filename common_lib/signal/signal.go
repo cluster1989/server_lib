@@ -1,10 +1,9 @@
 package signal
 
 import (
+	"fmt"
 	"os"
 	"syscall"
-
-	"github.com/thinkboy/log4go"
 )
 
 // InitSignal register signals handler.
@@ -13,7 +12,7 @@ func InitSignal() {
 	defer close(c)
 	for {
 		s := <-c
-		log4go.Info("server get a signal %s", s.String())
+		fmt.Printf("server get a signal %s", s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP, syscall.SIGINT:
 			return

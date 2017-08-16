@@ -1,4 +1,4 @@
-package codec
+package libio
 
 import (
 	"encoding/binary"

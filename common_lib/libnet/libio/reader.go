@@ -1,4 +1,4 @@
-package codec
+package libio
 
 import (
 	"io"
@@ -35,7 +35,7 @@ func (r *Reader) Read(b []byte) (n int, err error) {
 	return
 }
 
-func (r *Reader) ReadPacket(spliter *HeadSpliter) (b []byte) {
+func (r *Reader) ReadPacket(spliter *PacketSpliter) (b []byte) {
 	if r.err == nil {
 		b = spliter.Read(r)
 	}

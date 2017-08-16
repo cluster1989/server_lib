@@ -113,7 +113,7 @@ func (session *Session) setReadDeadLine(t time.Duration) {
 	if session.IsClosed() {
 		return
 	}
-
+if session.codec.
 }
 
 type CloseCallback struct {

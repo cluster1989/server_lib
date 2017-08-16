@@ -26,9 +26,3 @@ Spliter
 是对于数据包头部的写入以及读取操作
 
 -----
-
-ProtobufProtocol
-
-只是对于protobuffer的一次封装，
-
-里面实现了对于包头尾的简单调用

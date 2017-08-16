@@ -1,4 +1,4 @@
-package codec
+package libio
 
 import "io"
 
@@ -27,7 +27,7 @@ func (writer *Writer) Write(b []byte) (n int, err error) {
 	return
 }
 
-func (writer *Writer) WritePacket(b []byte, spliter *HeadSpliter) {
+func (writer *Writer) WritePacket(b []byte, spliter *PacketSpliter) {
 	if writer.err != nil {
 		return
 	}

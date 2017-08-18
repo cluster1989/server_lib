@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wqf/common_lib/libio"
 	"github.com/wqf/common_lib/libtime"
 
 	"github.com/wqf/common_lib/concurrent"
@@ -17,7 +16,8 @@ import (
 )
 
 type Server struct {
-	sessionGroup *concurrent.SyncGroupMap
+	clientGroup  *concurrent.SyncGroupMap
+	reflectGroup *concurrent.SyncUint64GroupMap
 	listerer     net.Listener
 	protocol     def.Protocol
 	Options      *ServerOptions
@@ -26,7 +26,8 @@ type Server struct {
 
 func NewServer(l net.Listener, p def.Protocol) *Server {
 	return &Server{
-		sessionGroup: concurrent.NewGroup(),
+		clientGroup:  concurrent.NewGroup(),
+		reflectGroup: concurrent.NewUint64Group(),
 		timeWheel:    libtime.NewTimerWheel(),
 		listerer:     l,
 		protocol:     p,
@@ -45,7 +46,6 @@ func (server *Server) Run() {
 
 			continue
 		}
-		server.sessionGroup.Set(sess.ID(), sess)
 		sess.AddCloseCallback(server.sessionClosedCallback)
 		sess.AddRecvCallBack(server.serssionRecvDataCallback)
 	}
@@ -75,35 +75,63 @@ func (server *Server) Accept() (*session.Session, error) {
 		}
 		codec := server.protocol.NewCodec(conn)
 		session := session.NewSession(codec, server.Options.SendQueueBuf, server.Options.RecvQueueBuf, server.Options.RecvTimeOut, server.Options.SendTimeOut)
+		server.DoHeartTask(session)
 		return session, nil
 	}
 }
 
+func (s *Server) DoHeartTask(sess *session.Session) {
+
+	task := sess.SetupHeartTask()
+	taskID := s.timeWheel.AddTask(server.Options.HeartBeatTime, -1, task)
+
+	sess.HeartTaskID = taskID
+}
+
 func (s *Server) Stop() {
 	s.listerer.Close()
-	s.sessionGroup.Dispose()
+	s.clientGroup.Dispose()
+	s.clientGroup.Dispose()
 }
 
 func (s *Server) sessionClosedCallback(sess *session.Session) {
 	//删除id
-	s.sessionGroup.Del(sess.ID())
+	userID := s.reflectGroup.Get(sess.ID())
+	s.clientGroup.Del(userID.(uint64))
+	s.reflectGroup.Del(sess.ID())
 }
 
-func (s *Server) serssionRecvDataCallback(data interface{}, msgId uint16, sess *session.Session, err error) {
-	handler := message.GetHandler(msgId)
-	ackCodec, err := handler(data.([]byte))
+func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *session.Session, err error) {
 	if err != nil {
 		//记录处理，不返回
 		return
 	}
-	ackData := ackCodec.MessageSerialize()
-	ackID := ackCodec.MessageType()
+	handler := message.GetHandler(msgID)
+
+	isWildMsg := !s.querySessionIDISExists(sess.ID())
+
+	ackData, err := handler(data.([]byte), isWildMsg)
+
+	length := len(ackData)
+	if length < 2 {
+		//服务器错误
+		return
+	}
+
 	var packet []byte
-	if len(ackData) == 1 {
-		packet = s.packData(ackData[0].([]byte), msgId)
-	} else if len(ackData) == 2 {
-		packet = s.packData(ackData[0].([]byte), msgId)
-		//组合session
+	if length >= 2 {
+		resID := ackData[0].(uint16)
+		resData := ackData[1].([]byte)
+
+		packet = sess.PackData(resID, resData)
+
+		if length == 3 {
+			//组合session
+			uniqueID := ackData[2].(uint64)
+			//与session一起组合
+			s.clientGroup.Set(uniqueID, sess)
+			s.reflectGroup.Set(sess.ID(), uniqueID)
+		}
 	}
 	if len(packet) > 0 {
 		//如果有数据 则发送
@@ -111,15 +139,49 @@ func (s *Server) serssionRecvDataCallback(data interface{}, msgId uint16, sess *
 	}
 }
 
-func (s *Server) packData(data []byte, msgId uint16) []byte {
+func (s *Server) RegistRoute(msgType uint16, ret def.MessageHandlerWithRet) {
+	message.Register(uint16, def)
+}
 
-	packet := make([]byte, 2)
-	if s.Options.IsLittleIndian {
-		libio.PutUint16LE(packet, msgId)
+func (s *Server) QueryUserIDIsExists(uniqueID uint64) bool {
+	sess := s.clientGroup.Get(uniqueID)
+	if sess == nil {
+		return false
 	} else {
-		libio.PutUint16BE(packet, msgId)
+		return true
 	}
-	packet = append(packet, data...)
+}
 
-	return packet
+func (s *Server) querySessionIDISExists(sessID uint64) bool {
+	uniqueID := s.reflectGroup.Get(sessID)
+	if uniqueID != nil {
+		return true
+	}
+	return false
+
+}
+
+func (s *Server) CloseUser(msgType uint16) {
+	if !s.QueryUserIDIsExists(id) {
+		return
+	}
+
+	sess := s.clientGroup.Get(id).(*session.Session)
+	sess.Close()
+}
+
+// 一样第一个是msgid ,第二个msg data
+func (s *Server) BroadCastMsg(groups []uint64, ack []interface{}) {
+	for _, id := range groups {
+		if !s.QueryUserIDIsExists(id) {
+			continue
+		}
+		sess := s.clientGroup.Get(id).(*session.Session)
+		data := sess.PackData(ack[0].(uint16), ack[1].([]byte))
+		err := sess.Send(data)
+		if err != nil {
+			//记录
+		}
+	}
+
 }

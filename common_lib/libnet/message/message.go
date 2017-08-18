@@ -22,7 +22,7 @@ func Register(msgType uint16, def def.MessageHandlerWithRet) {
 	Routes[msgType] = def
 }
 
-func GetHandler(msgType) def.MessageHandlerWithRet {
+func GetHandler(msgType uint16) def.MessageHandlerWithRet {
 	def, ok := Routes[msgType]
 	if !ok {
 		return nil

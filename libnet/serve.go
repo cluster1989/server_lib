@@ -4,9 +4,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/wqf/common_lib/libio"
-	"github.com/wqf/common_lib/libnet/def"
-	"github.com/wqf/common_lib/libnet/session"
+	"github.com/wuqifei/server_lib/libio"
+	"github.com/wuqifei/server_lib/libnet/def"
+	"github.com/wuqifei/server_lib/libnet/session"
 )
 
 type ServerOptions struct {

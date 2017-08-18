@@ -3,7 +3,7 @@ package libio
 import (
 	"io"
 
-	"github.com/wqf/common_lib/libnet/def"
+	"github.com/wuqifei/server_lib/libnet/def"
 )
 
 type ProtoCodec struct {

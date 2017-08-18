@@ -6,13 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wqf/common_lib/libtime"
-
-	"github.com/wqf/common_lib/concurrent"
-
-	"github.com/wqf/common_lib/libnet/def"
-	"github.com/wqf/common_lib/libnet/message"
-	"github.com/wqf/common_lib/libnet/session"
+	"github.com/wuqifei/server_lib/concurrent"
+	"github.com/wuqifei/server_lib/libnet/def"
+	"github.com/wuqifei/server_lib/libnet/message"
+	"github.com/wuqifei/server_lib/libnet/session"
+	"github.com/wuqifei/server_lib/libtime"
 )
 
 type Server struct {

@@ -1,6 +1,6 @@
 package libtime
 
-import "github.com/wqf/common_lib/concurrent"
+import "github.com/wuqifei/server_lib/concurrent"
 
 //为每个定时器生成id
 var timerIds *concurrent.AtomicInt64

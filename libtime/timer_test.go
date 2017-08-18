@@ -1,9 +1,12 @@
 package libtime
 
-import "testing"
-import "time"
-import "fmt"
-import "github.com/wqf/common_lib/signal"
+import (
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/wuqifei/server_lib/signal"
+)
 
 func TestTimer(t *testing.T) {
 	wheel := NewTimerWheel()

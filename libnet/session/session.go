@@ -6,12 +6,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/wqf/common_lib/libnet/message"
-
-	"github.com/wqf/common_lib/concurrent"
-	"github.com/wqf/common_lib/libio"
-	"github.com/wqf/common_lib/libnet/def"
-	"github.com/wqf/common_lib/libtime"
+	"github.com/wuqifei/server_lib/concurrent"
+	"github.com/wuqifei/server_lib/libio"
+	"github.com/wuqifei/server_lib/libnet/def"
+	"github.com/wuqifei/server_lib/libnet/message"
+	"github.com/wuqifei/server_lib/libtime"
 )
 
 var SessionClosedError = errors.New("Session Closed")

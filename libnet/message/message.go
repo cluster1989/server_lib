@@ -3,7 +3,7 @@ package message
 import (
 	"fmt"
 
-	"github.com/wqf/common_lib/libnet/def"
+	"github.com/wuqifei/server_lib/libnet/def"
 )
 
 var (

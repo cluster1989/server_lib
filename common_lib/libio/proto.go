@@ -48,6 +48,7 @@ func (c *protoCodec) Send(msg interface{}) error {
 	c.w.WritePacket(data, &c.p.analyseHandle)
 	return nil
 }
+
 func (c *protoCodec) Close() error {
 	if c.closer != nil {
 		return c.closer.Close()

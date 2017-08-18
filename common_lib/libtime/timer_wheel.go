@@ -63,6 +63,12 @@ func (w *TimerWheel) Stop() {
 	w.stopchan <- true
 	//等待所有的都执行完毕
 	w.waitGroup.Wait()
+	w.ticker.Stop()
+	close(w.timeOutChan)
+	close(w.cancelChan)
+	close(w.addChan)
+	close(w.stopchan)
+	close(w.sizeChan)
 }
 
 func (w *TimerWheel) getLattestTimer() []*TimerTask {

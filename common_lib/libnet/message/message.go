@@ -3,29 +3,29 @@ package message
 import (
 	"fmt"
 
-	"github.com/wqf/common_lib/libnet/handler"
+	"github.com/wqf/common_lib/libnet/def"
 )
 
 var (
-	Routes map[uint16]handler.MessageHandlerWithRet
+	Routes map[uint16]def.MessageHandlerWithRet
 )
 
 func init() {
-	Routes = make(map[uint16]handler.MessageHandlerWithRet)
+	Routes = make(map[uint16]def.MessageHandlerWithRet)
 }
 
 // 普通消息
-func Register(msgType uint16, handler handler.MessageHandlerWithRet) {
+func Register(msgType uint16, def def.MessageHandlerWithRet) {
 	if _, ok := Routes[msgType]; ok {
 		panic(fmt.Sprintf("trying to register message %d twice", msgType))
 	}
-	Routes[msgType] = handler
+	Routes[msgType] = def
 }
 
-func GetHandler(msgType) handler.MessageHandlerWithRet {
-	handler, ok := Routes[msgType]
+func GetHandler(msgType) def.MessageHandlerWithRet {
+	def, ok := Routes[msgType]
 	if !ok {
 		return nil
 	}
-	return handler
+	return def
 }

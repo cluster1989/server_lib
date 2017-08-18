@@ -50,6 +50,7 @@ func (c *Client) Exec(data interface{}) error {
 
 func (c *Client) Close() {
 	Mananger.DelClient(c)
+
 	c.Session.Close()
 }
 

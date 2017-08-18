@@ -2,19 +2,16 @@ package message
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/wqf/common_lib/libnet/def"
 )
 
 var (
-	heartBeatType     uint16
-	heartBeatDuration time.Duration
+	heartBeatType uint16
 )
 
 // 心跳信息
-func RegisterHeartBeat(msgType uint16, duration time.Duration, handler def.MessageHandlerWithRet) {
-	heartBeatDuration = duration
+func RegisterHeartBeat(msgType uint16, handler def.MessageHandlerWithRet) {
 	if _, ok := Routes[msgType]; ok {
 		panic(fmt.Sprintf("trying to register message %d twice", msgType))
 	}
@@ -24,8 +21,4 @@ func RegisterHeartBeat(msgType uint16, duration time.Duration, handler def.Messa
 
 func GetHeartBeatHandler() def.MessageHandlerWithRet {
 	return GetHandler(heartBeatType)
-}
-
-func GetHeartBeatDuration() time.Duration {
-	return heartBeatDuration
 }

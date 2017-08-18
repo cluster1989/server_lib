@@ -35,7 +35,7 @@ func (g *SyncUint64GroupMap) Dispose() {
 		for i := 0; i < MapNum; i++ {
 			syncIDMap := &g.SyncMaps[i]
 			syncIDMap.Lock()
-			for key, item := range syncIDMap.Items {
+			for key, _ := range syncIDMap.Items {
 				//从group中删除
 				delete(syncIDMap.Items, key)
 			}

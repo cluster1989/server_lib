@@ -40,7 +40,7 @@ func (server *Server) Listener() net.Listener {
 
 func (server *Server) Run() {
 	for {
-		sess, err := server.Accept() //接收客户端连接
+		sess, err := server.accept() //接收客户端连接
 		if err != nil {
 			//record
 
@@ -51,7 +51,7 @@ func (server *Server) Run() {
 	}
 }
 
-func (server *Server) Accept() (*session.Session, error) {
+func (server *Server) accept() (*session.Session, error) {
 	var delay time.Duration
 	for {
 		conn, err := server.listerer.Accept()
@@ -74,7 +74,7 @@ func (server *Server) Accept() (*session.Session, error) {
 			return nil, err
 		}
 		codec := server.protocol.NewCodec(conn)
-		session := session.NewSession(codec, server.Options.SendQueueBuf, server.Options.RecvQueueBuf, server.Options.RecvTimeOut, server.Options.SendTimeOut)
+		session := session.NewSession(codec, server.Options.ReadTimeOutTimes, server.Options.SendQueueBuf, server.Options.RecvQueueBuf, server.Options.RecvTimeOut, server.Options.SendTimeOut)
 		server.DoHeartTask(session)
 		return session, nil
 	}
@@ -83,7 +83,7 @@ func (server *Server) Accept() (*session.Session, error) {
 func (s *Server) DoHeartTask(sess *session.Session) {
 
 	task := sess.SetupHeartTask()
-	taskID := s.timeWheel.AddTask(server.Options.HeartBeatTime, -1, task)
+	taskID := s.timeWheel.AddTask(s.Options.HeartBeatTime, -1, task)
 
 	sess.HeartTaskID = taskID
 }
@@ -110,7 +110,7 @@ func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *
 
 	isWildMsg := !s.querySessionIDISExists(sess.ID())
 
-	ackData, err := handler(data.([]byte), isWildMsg)
+	ackData := handler(data.([]byte), isWildMsg)
 
 	length := len(ackData)
 	if length < 2 {
@@ -140,7 +140,11 @@ func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *
 }
 
 func (s *Server) RegistRoute(msgType uint16, ret def.MessageHandlerWithRet) {
-	message.Register(uint16, def)
+	message.Register(msgType, ret)
+}
+
+func (s *Server) RegistHeartBeat(msgType uint16, ret def.MessageHandlerWithRet) {
+	message.RegisterHeartBeat(msgType, ret)
 }
 
 func (s *Server) QueryUserIDIsExists(uniqueID uint64) bool {
@@ -161,12 +165,12 @@ func (s *Server) querySessionIDISExists(sessID uint64) bool {
 
 }
 
-func (s *Server) CloseUser(msgType uint16) {
-	if !s.QueryUserIDIsExists(id) {
+func (s *Server) CloseUser(userID uint64) {
+	if !s.QueryUserIDIsExists(userID) {
 		return
 	}
 
-	sess := s.clientGroup.Get(id).(*session.Session)
+	sess := s.clientGroup.Get(userID).(*session.Session)
 	sess.Close()
 }
 

@@ -29,6 +29,9 @@ type ServerOptions struct {
 
 	//server 心跳时间
 	HeartBeatTime time.Duration
+
+	// 允许超时次数
+	ReadTimeOutTimes int
 }
 
 func Serve(options *ServerOptions) *Server {
@@ -48,7 +51,7 @@ func Connect(network, address string, p def.Protocol) (*session.Session, error) 
 	if err != nil {
 		return nil, err
 	}
-	return session.NewSession(p.NewCodec(conn), 0, 0, 0, 0), nil
+	return session.NewSession(p.NewCodec(conn), 0, 0, 0, 0, 0), nil
 }
 
 // 测试用
@@ -57,5 +60,5 @@ func ConnectTimeout(network, address string, timeout time.Duration, p def.Protoc
 	if err != nil {
 		return nil, err
 	}
-	return session.NewSession(p.NewCodec(conn), 0, 0, 0, 0), nil
+	return session.NewSession(p.NewCodec(conn), 0, 0, 0, 0, 0), nil
 }

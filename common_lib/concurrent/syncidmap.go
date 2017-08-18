@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-const MapNum = 32
+const SyncIDMapNum = 32
 
 type SyncIdMap struct {
 	sync.RWMutex
@@ -14,7 +14,7 @@ type SyncIdMap struct {
 }
 
 type SyncGroupMap struct {
-	SyncMaps    [MapNum]SyncIdMap
+	SyncMaps    [SyncIDMapNum]SyncIdMap
 	disposeFlag bool
 	disposeOnce sync.Once
 	disposeWait sync.WaitGroup
@@ -34,7 +34,7 @@ func NewGroup() *SyncGroupMap {
 func (g *SyncGroupMap) Dispose() {
 	g.disposeOnce.Do(func() {
 		g.disposeFlag = true
-		for i := 0; i < MapNum; i++ {
+		for i := 0; i < SyncIDMapNum; i++ {
 			syncIDMap := &g.SyncMaps[i]
 			syncIDMap.Lock()
 			for key, item := range syncIDMap.Items {
@@ -54,7 +54,7 @@ func (g *SyncGroupMap) Dispose() {
 }
 
 func (g *SyncGroupMap) Get(id uint64) io.Closer {
-	syncIDMap := g.SyncMaps[id%MapNum]
+	syncIDMap := g.SyncMaps[id%SyncIDMapNum]
 	syncIDMap.Lock()
 	defer syncIDMap.Unlock()
 	item, _ := syncIDMap.Items[id]
@@ -62,7 +62,7 @@ func (g *SyncGroupMap) Get(id uint64) io.Closer {
 }
 
 func (g *SyncGroupMap) Set(id uint64, item io.Closer) {
-	syncIDMap := g.SyncMaps[id%MapNum]
+	syncIDMap := g.SyncMaps[id%SyncIDMapNum]
 	syncIDMap.Lock()
 	defer syncIDMap.Unlock()
 	syncIDMap.Items[id] = item
@@ -74,7 +74,7 @@ func (g *SyncGroupMap) Del(id uint64) {
 		g.disposeWait.Done()
 		return
 	}
-	syncIDMap := g.SyncMaps[id%MapNum]
+	syncIDMap := g.SyncMaps[id%SyncIDMapNum]
 	syncIDMap.Lock()
 	defer syncIDMap.Unlock()
 	delete(syncIDMap.Items, id)

@@ -1,11 +1,12 @@
 package session
 
 import (
-	"github.com/wqf/common_lib/libnet/message"
 	"errors"
 	"fmt"
 	"sync"
 	"time"
+
+	"github.com/wqf/common_lib/libnet/message"
 
 	"github.com/wqf/common_lib/concurrent"
 	"github.com/wqf/common_lib/libio"
@@ -31,23 +32,23 @@ type Session struct {
 
 	readTimeOut      time.Duration //读取超时
 	writeTimeOut     time.Duration //写入超时
-	readTimeOutTimes int// 允许超时次数
-	timeOutTimes     int//已经超时次数
+	readTimeOutTimes int           // 允许超时次数
+	timeOutTimes     int           //已经超时次数
 	//心跳id
 	HeartTaskID int64
-	HeartTask   libtime.TimerTaskTimeOut
+	HeartTask   *libtime.TimerTaskTimeOut
 }
 
 func init() {
 	globalSessionId = concurrent.NewAtomicUint64(0)
 }
 
-func NewSession(codec def.Codec,readTimeOutTimes,sendChanSize, recvChanSize int, readTimeOut, writeTimeOut time.Duration) *Session {
-	return newSession(codec, sendChanSize, recvChanSize, readTimeOut, writeTimeOut)
+func NewSession(codec def.Codec, readTimeOutTimes, sendChanSize, recvChanSize int, readTimeOut, writeTimeOut time.Duration) *Session {
+	return newSession(codec, readTimeOutTimes, sendChanSize, recvChanSize, readTimeOut, writeTimeOut)
 }
 
-func newSession(codec def.Codec,readTimeOutTimes, sendChanSize int, recvChanSize int, readTimeOut, writeTimeOut time.Duration) *Session {
-	
+func newSession(codec def.Codec, readTimeOutTimes, sendChanSize int, recvChanSize int, readTimeOut, writeTimeOut time.Duration) *Session {
+
 	session := &Session{}
 	session.codec = codec
 	session.id = globalSessionId.IncrementAndGet()
@@ -67,7 +68,7 @@ func newSession(codec def.Codec,readTimeOutTimes, sendChanSize int, recvChanSize
 		writeTimeOut = time.Duration(60) * time.Second
 	}
 
-	if readTimeOutTimes = 0 {
+	if readTimeOutTimes == 0 {
 		readTimeOutTimes = 3
 	}
 
@@ -106,10 +107,10 @@ func (s *Session) recvChanLoop() {
 			}
 			s.timeOutTimes = 0
 		case <-time.After(s.readTimeOut):
-			s.timeOutTimes ++
+			s.timeOutTimes++
 			if s.timeOutTimes > s.readTimeOutTimes {
 				return
-			}else {
+			} else {
 				continue
 			}
 		}
@@ -234,9 +235,9 @@ func (s *Session) invokeCloseCallBack() {
 	s.closeCallback(s)
 }
 
-func (s *Session) PackData(msgID uint16,data []byte ) []byte {
+func (s *Session) PackData(msgID uint16, data []byte) []byte {
 	packet := make([]byte, 2)
-	codec.PutUint16BE(packet, msgID)
+	libio.PutUint16BE(packet, msgID)
 	packet = append(packet, data...)
 	return packet
 }
@@ -251,7 +252,6 @@ func (s *Session) SetupHeartTask() (task *libtime.TimerTaskTimeOut) {
 		task.Callback = func(backData interface{}) {
 			s.sendHeartMsg()
 		}
-		s.HeartData = data
 		s.closeMutex.Unlock()
 	}
 	return s.HeartTask
@@ -259,10 +259,10 @@ func (s *Session) SetupHeartTask() (task *libtime.TimerTaskTimeOut) {
 
 func (s *Session) sendHeartMsg() {
 	handler := message.GetHeartBeatHandler()
-	ackData :=handler(nil,nil)
+	ackData := handler(nil, true)
 	heartMsgID := ackData[0].(uint16)
 	heartData := ackData[1].([]byte)
-	packet := s.PackData(heartMsgID,heartData)
+	packet := s.PackData(heartMsgID, heartData)
 	err := s.Send(packet)
 	if err != nil {
 		//heart msg

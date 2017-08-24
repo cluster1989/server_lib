@@ -88,6 +88,7 @@ func (s *Server) DoHeartTask(sess *session.Session) {
 
 func (s *Server) Stop() {
 	s.listerer.Close()
+	s.timeWheel.Stop()
 	s.clientGroup.Dispose()
 	s.clientGroup.Dispose()
 }

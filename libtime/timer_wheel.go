@@ -139,8 +139,8 @@ func (w *TimerWheel) start() {
 			w.Remove(id)
 		case w.sizeChan <- w.timers.Len():
 		case <-w.stopchan:
-			//stop
-			w.Flush()
+			w.Flush() //flush 之后要直接return 破开循环
+			return
 		case task := <-w.addChan:
 			heap.Push(w.timers, task)
 		case timeoutTask := <-w.timeOutChan:

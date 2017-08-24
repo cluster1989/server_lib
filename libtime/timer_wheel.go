@@ -95,7 +95,8 @@ func (w *TimerWheel) Remove(id int64) {
 		return
 	}
 	index := w.timers.GetIndexByID(id)
-	if index > 0 {
+	fmt.Printf("删除的任务id:%d,删除的任务索引：%d \n", id, index)
+	if index >= 0 {
 		heap.Remove(w.timers, index)
 	}
 	w.waitGroup.Done()

@@ -14,6 +14,7 @@ import (
 )
 
 var SessionClosedError = errors.New("Session Closed")
+var SessionMsgNoSuchTypeError = errors.New("No such type ")
 
 var globalSessionId *concurrent.AtomicUint64
 
@@ -24,15 +25,14 @@ type Session struct {
 	sendChan      chan interface{}
 	recvChan      chan interface{}
 	closeFlag     *concurrent.AtomicBoolean
-	closeChan     chan int
 	closeMutex    sync.Mutex
 	closeCallback func(s *Session)
 	once          *sync.Once
 
-	readTimeOut      time.Duration //读取超时
-	writeTimeOut     time.Duration //写入超时
-	readTimeOutTimes int           // 允许超时次数
-	timeOutTimes     int           //已经超时次数
+	readTimeOut      time.Duration           //读取超时
+	writeTimeOut     time.Duration           //写入超时
+	readTimeOutTimes int                     // 允许超时次数
+	timeOutTimes     *concurrent.AtomicInt32 //已经超时次数
 	//心跳id
 	HeartTaskID int64
 	HeartTask   *libtime.TimerTaskTimeOut
@@ -52,6 +52,7 @@ func newSession(codec def.Codec, readTimeOutTimes, sendChanSize int, recvChanSiz
 	session.codec = codec
 	session.id = globalSessionId.IncrementAndGet()
 	session.closeFlag = concurrent.NewAtomicBoolean(false) //默认未关闭
+	session.once = &sync.Once{}
 
 	//错误检查
 	if sendChanSize == 0 {
@@ -75,6 +76,9 @@ func newSession(codec def.Codec, readTimeOutTimes, sendChanSize int, recvChanSiz
 	session.readTimeOut = readTimeOut
 	session.sendChan = make(chan interface{}, sendChanSize)
 	session.recvChan = make(chan interface{}, recvChanSize)
+	session.readTimeOutTimes = readTimeOutTimes
+
+	session.timeOutTimes = concurrent.NewAtomicInt32(0)
 
 	go session.recvChanLoop()
 	go session.sendChanLoop()
@@ -98,18 +102,26 @@ func (s *Session) IsClosed() bool {
 func (s *Session) recvChanLoop() {
 	defer s.Close()
 	for {
+		if s.IsClosed() {
+			return
+		}
+
 		select {
 		case msg := <-s.recvChan:
 			if s.onRecv != nil {
 				data, msgID, err := s.parse(msg)
 				s.onRecv(data, msgID, s, err)
 			}
-			s.timeOutTimes = 0
+			s.timeOutTimes.Set(0)
+
 		case <-time.After(s.readTimeOut):
-			s.timeOutTimes++
-			if s.timeOutTimes > s.readTimeOutTimes {
+			t := s.timeOutTimes.IncrementAndGet()
+
+			if t > int32(s.readTimeOutTimes) {
+				fmt.Println("session is really timeout -")
 				return
 			} else {
+				fmt.Printf("recv data timeout :%d readtimeouttimes:%d \n", t, s.readTimeOutTimes)
 				continue
 			}
 		}
@@ -120,13 +132,15 @@ func (s *Session) recvChanLoop() {
 func (s *Session) sendChanLoop() {
 	defer s.Close()
 	for {
+		if s.IsClosed() {
+			return
+		}
+
 		select {
 		case msg := <-s.sendChan:
 			if s.codec.Send(msg) != nil {
 				return
 			}
-		case <-s.closeChan:
-			return
 		case <-time.After(s.writeTimeOut):
 			//超时
 			return
@@ -138,14 +152,19 @@ func (s *Session) recvLoop() {
 	defer s.Close()
 
 	for {
+		if s.IsClosed() {
+			return
+		}
+
 		data, err := s.codec.Receive()
+		fmt.Printf("recv msg :%v\n", data)
 		if err != nil {
 			//记录错误
 			continue
 		}
-		if data == nil {
+		if data == nil || len(data) == 0 {
 			//数据错误，直接关闭
-			s.Close()
+			return
 		}
 		s.recvChan <- data
 		//将数据放入缓冲池中
@@ -158,13 +177,10 @@ func (s *Session) Send(msg interface{}) error {
 	}
 	if s.sendChan == nil {
 		return s.codec.Send(msg)
+	} else {
+		s.sendChan <- msg
 	}
-	//这里设置发送超时
-	select {
-	case s.sendChan <- msg:
-		return nil
-
-	}
+	return nil
 }
 
 //一个session关闭只能实现一次
@@ -175,12 +191,12 @@ func (s *Session) close() error {
 	var err error
 	s.once.Do(func() {
 
-		err = s.codec.Close() //关闭连接
-		close(s.closeChan)    //关闭通道
 		close(s.recvChan)
 		close(s.sendChan)
+		s.codec.Close()         //关闭连接
 		s.invokeCloseCallBack() //发送关闭的回调
 		s.closeFlag.Set(true)   //设置已关闭
+
 	})
 
 	return err
@@ -188,13 +204,18 @@ func (s *Session) close() error {
 
 //关闭session
 func (s *Session) Close() error {
-	s.closeChan <- 1
-	return nil
+
+	return s.close()
 }
 
 func (s *Session) parse(data interface{}) (mdata interface{}, msgId uint16, err error) {
+
 	//解析对象
-	reqData := mdata.([]byte)
+	reqData, ok := mdata.([]byte)
+	if !ok {
+		err = SessionMsgNoSuchTypeError
+		return
+	}
 	//先取协议号
 	cmdByte := reqData[0:2]
 	if cmdByte == nil {
@@ -251,6 +272,8 @@ func (s *Session) SetupHeartTask() (task *libtime.TimerTaskTimeOut) {
 		task.Callback = func(backData interface{}) {
 			s.sendHeartMsg()
 		}
+
+		s.HeartTask = task
 		s.closeMutex.Unlock()
 	}
 	return s.HeartTask

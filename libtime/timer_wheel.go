@@ -32,10 +32,8 @@ func NewTimerWheel() *TimerWheel {
 	wheel.cancelChan = make(chan int64, bufferSize)
 	wheel.sizeChan = make(chan int)
 	heap.Init(wheel.timers)
-	wheel.waitGroup.Add(1)
 	go func() {
 		wheel.start()
-		wheel.waitGroup.Done()
 	}()
 	return wheel
 }
@@ -93,11 +91,11 @@ func (w *TimerWheel) getLattestTimer() []*TimerTask {
 }
 
 func (w *TimerWheel) Remove(id int64) {
-	if id < 0 {
+	if id <= 0 {
 		return
 	}
 	index := w.timers.GetIndexByID(id)
-	if index >= 0 {
+	if index > 0 {
 		heap.Remove(w.timers, index)
 	}
 	w.waitGroup.Done()

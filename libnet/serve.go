@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/wuqifei/server_lib/libio"
-	"github.com/wuqifei/server_lib/libnet/def"
-	"github.com/wuqifei/server_lib/libnet/session"
 )
 
 type ServerOptions struct {
@@ -32,6 +30,12 @@ type ServerOptions struct {
 
 	// 允许超时次数
 	ReadTimeOutTimes int
+
+	// 最大的接收字节数
+	MaxRecvBufferSize int
+
+	// 最大的发送字节数
+	MaxSendBufferSize int
 }
 
 func Serve(options *ServerOptions) *Server {
@@ -39,26 +43,8 @@ func Serve(options *ServerOptions) *Server {
 	if err != nil {
 		panic("server init error")
 	}
-	proto := libio.New(options.IsLittleIndian)
+	proto := libio.New(options.IsLittleIndian, options.MaxRecvBufferSize, options.MaxSendBufferSize)
 	server := NewServer(listener, proto)
 	server.Options = options
 	return server
-}
-
-// 测试用
-func Connect(network, address string, p def.Protocol) (*session.Session, error) {
-	conn, err := net.Dial(network, address)
-	if err != nil {
-		return nil, err
-	}
-	return session.NewSession(p.NewCodec(conn), 0, 0, 0, 0, 0), nil
-}
-
-// 测试用
-func ConnectTimeout(network, address string, timeout time.Duration, p def.Protocol) (*session.Session, error) {
-	conn, err := net.DialTimeout(network, address, timeout)
-	if err != nil {
-		return nil, err
-	}
-	return session.NewSession(p.NewCodec(conn), 0, 0, 0, 0, 0), nil
 }

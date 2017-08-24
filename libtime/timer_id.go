@@ -7,5 +7,5 @@ var timerIds *concurrent.AtomicInt64
 
 func init() {
 	//给定初始数值
-	timerIds = concurrent.NewAtomicInt64(0)
+	timerIds = concurrent.NewAtomicInt64(1)
 }

@@ -1,18 +1,29 @@
 package libio
 
 import (
+	"errors"
 	"io"
 
 	"github.com/wuqifei/server_lib/libnet/def"
 )
 
+var (
+	CodecSendMsgNilError = errors.New("send msg is nil")
+)
+
 type ProtoCodec struct {
 	isLittleIndian bool
 	analyseHandle  PacketSpliter
+
+	// 最大的接收字节数
+	MaxRecvBufferSize int
+
+	// 最大的发送字节数
+	MaxSendBufferSize int
 }
 
 //是否是小端解析
-func New(isLittleIndian bool) *ProtoCodec {
+func New(isLittleIndian bool, maxRecvBufferSize, maxSendBufferSize int) *ProtoCodec {
 	p := &ProtoCodec{}
 	p.isLittleIndian = isLittleIndian
 	if p.isLittleIndian {
@@ -20,6 +31,8 @@ func New(isLittleIndian bool) *ProtoCodec {
 	} else {
 		p.analyseHandle = SplitByUint16BE
 	}
+	p.analyseHandle.MaxRecvBufferSize = maxRecvBufferSize
+	p.analyseHandle.MaxSendBufferSize = maxSendBufferSize
 	return p
 }
 
@@ -39,14 +52,17 @@ func (j *ProtoCodec) NewCodec(rw io.ReadWriter) def.Codec {
 	return codec
 }
 func (c *protoCodec) Receive() ([]byte, error) {
-	data := c.r.ReadPacket(&c.p.analyseHandle)
-	return data, nil
+	data, err := c.r.ReadPacket(&c.p.analyseHandle)
+	return data, err
 }
 
 func (c *protoCodec) Send(msg interface{}) error {
+	if msg == nil {
+		return CodecSendMsgNilError
+	}
 	data := msg.([]byte)
-	c.w.WritePacket(data, &c.p.analyseHandle)
-	return nil
+	err := c.w.WritePacket(data, &c.p.analyseHandle)
+	return err
 }
 
 func (c *protoCodec) Close() error {

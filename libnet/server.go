@@ -95,6 +95,11 @@ func (s *Server) Stop() {
 func (s *Server) sessionClosedCallback(sess *session.Session) {
 	//删除id
 	userID := s.reflectGroup.Get(sess.ID())
+	s.timeWheel.CancelTimer(sess.HeartTaskID)
+
+	if userID == nil {
+		return
+	}
 	s.clientGroup.Del(userID.(uint64))
 	s.reflectGroup.Del(sess.ID())
 }

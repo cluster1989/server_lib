@@ -4,8 +4,8 @@ import (
 	"flag"
 	"time"
 
-	"github.com/wuqifei/server_lib/example/server/server_log"
 	"github.com/wuqifei/server_lib/libnet"
+	"github.com/wuqifei/server_lib/logs"
 	"github.com/wuqifei/server_lib/signal"
 )
 
@@ -17,7 +17,9 @@ func main() {
 func libServer() {
 	//解析命令行
 	flag.Parse()
-	server_log.LibLogger.SetLogger("console", "")
+	logger := logs.GetLibLogger()
+	logger.SetLogger("console", `{"color":false}`)
+	logger.EnableFuncCallDepth(true)
 
 	options := &libnet.ServerOptions{}
 	options.Network = "tcp"

@@ -259,7 +259,6 @@ func (libLog *LibLogger) writeMsg(logLevel int, msg string, v ...interface{}) er
 		libLog.setLogger(AdapterConsole)
 		libLog.lock.Unlock()
 	}
-
 	if len(v) > 0 {
 		msg = fmt.Sprintf(msg, v...)
 	}
@@ -271,6 +270,7 @@ func (libLog *LibLogger) writeMsg(logLevel int, msg string, v ...interface{}) er
 			line = 0
 		}
 		_, filename := path.Split(file)
+
 		msg = "[" + filename + ":" + strconv.Itoa(line) + "] " + msg
 	}
 

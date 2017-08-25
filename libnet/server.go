@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/smallnest/rpcx/log"
 	"github.com/wuqifei/server_lib/concurrent"
 	"github.com/wuqifei/server_lib/libnet/def"
 	"github.com/wuqifei/server_lib/libnet/message"
@@ -159,7 +158,7 @@ func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *
 }
 
 func (s *Server) RegistRoute(msgType uint16, ret def.MessageHandlerWithRet) {
-	log.Info("libnet:registe route (%d)", msgType)
+	logs.Info("libnet:registe route (%d)", msgType)
 	message.Register(msgType, ret)
 }
 

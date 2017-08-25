@@ -6,11 +6,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/smallnest/rpcx/log"
 	"github.com/wuqifei/server_lib/concurrent"
 	"github.com/wuqifei/server_lib/libnet/def"
 	"github.com/wuqifei/server_lib/libnet/message"
 	"github.com/wuqifei/server_lib/libnet/session"
 	"github.com/wuqifei/server_lib/libtime"
+	"github.com/wuqifei/server_lib/logs"
 )
 
 type Server struct {
@@ -37,13 +39,16 @@ func (server *Server) Listener() net.Listener {
 }
 
 func (server *Server) Run() {
+	logs.Informational("libnet:Start to listen")
+
 	for {
 		sess, err := server.accept() //接收客户端连接
 		if err != nil {
 			//record
-
+			logs.Error("libnet:Client Connect Failed sessionid(%d),error(%v)", sess.ID(), err)
 			continue
 		}
+		logs.Informational("libnet:receive a client connect sessionid(%d)", sess.ID())
 		sess.AddCloseCallback(server.sessionClosedCallback)
 		sess.AddRecvCallBack(server.serssionRecvDataCallback)
 	}
@@ -106,8 +111,16 @@ func (s *Server) sessionClosedCallback(sess *session.Session) {
 }
 
 func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *session.Session, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			//这里并不信任逻辑层的输入
+			logs.Error("libnet has recevice a panic(%v)", r)
+		}
+	}()
+
 	if err != nil {
 		//记录处理，不返回
+		logs.Error("libnet:server returned a error msgID(%d),error(%v),sessionId(%d)", msgID, err, sess.ID())
 		return
 	}
 	handler := message.GetHandler(msgID)
@@ -119,6 +132,7 @@ func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *
 	length := len(ackData)
 	if length < 2 {
 		//服务器错误
+		logs.Error("libnet:server ackdata length error msgID(%d),sessionId(%d)", msgID, sess.ID())
 		return
 	}
 
@@ -135,6 +149,7 @@ func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *
 			//与session一起组合
 			s.clientGroup.Set(uniqueID, sess)
 			s.reflectGroup.Set(sess.ID(), uniqueID)
+			logs.Emergency("libnet:record user ID(%d) and essionID(%d)", uniqueID, sess.ID())
 		}
 	}
 	if len(packet) > 0 {
@@ -144,6 +159,7 @@ func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *
 }
 
 func (s *Server) RegistRoute(msgType uint16, ret def.MessageHandlerWithRet) {
+	log.Info("libnet:registe route (%d)", msgType)
 	message.Register(msgType, ret)
 }
 
@@ -182,6 +198,7 @@ func (s *Server) CloseUser(userID uint64) {
 func (s *Server) BroadCastMsg(groups []uint64, ack []interface{}) {
 	for _, id := range groups {
 		if !s.QueryUserIDIsExists(id) {
+			logs.Error("libnet:broadcast user is not existed userID(%d))", id)
 			continue
 		}
 		sess := s.clientGroup.Get(id).(*session.Session)
@@ -189,6 +206,7 @@ func (s *Server) BroadCastMsg(groups []uint64, ack []interface{}) {
 		err := sess.Send(data)
 		if err != nil {
 			//记录
+			logs.Error("libnet:braod cast msg error msgId(%d),msgData(%v),error(%v)", ack[0].(uint16), ack[1].([]byte), err)
 		}
 	}
 

@@ -30,7 +30,7 @@ func send(conn *net.TCPConn) {
 		lengthb = append(lengthb, ([]byte)("abcde")...)
 		conn.Write(lengthb)
 		fmt.Printf("send msg :%v\n", lengthb)
-		time.Sleep(time.Duration(2) * time.Second)
+		time.Sleep(time.Duration(20) * time.Second)
 	}
 }
 

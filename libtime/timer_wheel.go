@@ -2,9 +2,10 @@ package libtime
 
 import (
 	"container/heap"
-	"fmt"
 	"sync"
 	"time"
+
+	"github.com/wuqifei/server_lib/logs"
 )
 
 const (
@@ -76,7 +77,7 @@ func (w *TimerWheel) getLattestTimer() []*TimerTask {
 		nextFireTime := task.firetime
 		elasped := time.Since(nextFireTime).Seconds()
 		if elasped > 1.0 {
-			fmt.Printf("timer exec error with 1 second not exec")
+			logs.Emergency("libtime:timer exec error with 1 second not exec")
 		}
 		if elasped > 0.0 {
 			//时间未到
@@ -95,7 +96,6 @@ func (w *TimerWheel) Remove(id int64) {
 		return
 	}
 	index := w.timers.GetIndexByID(id)
-	fmt.Printf("删除的任务id:%d,删除的任务索引：%d \n", id, index)
 	if index >= 0 {
 		heap.Remove(w.timers, index)
 	}

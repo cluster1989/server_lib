@@ -2,7 +2,6 @@ package session
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/wuqifei/server_lib/libnet/def"
 	"github.com/wuqifei/server_lib/libnet/message"
 	"github.com/wuqifei/server_lib/libtime"
+	"github.com/wuqifei/server_lib/logs"
 )
 
 var SessionClosedError = errors.New("Session Closed")
@@ -110,6 +110,9 @@ func (s *Session) recvChanLoop() {
 		case msg := <-s.recvChan:
 			if s.onRecv != nil {
 				data, msgID, err := s.parse(msg)
+				if err != nil {
+					logs.Error("libnet:session parse message msgId(%d) data(%v) err(%v)", data, msgID, err)
+				}
 				s.onRecv(data, msgID, s, err)
 			}
 			s.timeOutTimes.Set(0)
@@ -118,14 +121,13 @@ func (s *Session) recvChanLoop() {
 			t := s.timeOutTimes.IncrementAndGet()
 
 			if t > int32(s.readTimeOutTimes) {
-				fmt.Println("session is really timeout -")
+				logs.Info("libnet:session has not send msg for (%d) times session(%d)", t, s.ID())
 				return
 			} else {
-				fmt.Printf("recv data timeout :%d readtimeouttimes:%d \n", t, s.readTimeOutTimes)
+				logs.Emergency("libnet:session recv session message  timeout session(%d)", s.ID())
 				continue
 			}
 		}
-		//设置超市时间
 	}
 }
 
@@ -138,11 +140,14 @@ func (s *Session) sendChanLoop() {
 
 		select {
 		case msg := <-s.sendChan:
-			if s.codec.Send(msg) != nil {
+			logs.Debug("libnet:session send session message message(%v) session(%d)", msg, s.ID())
+			if err := s.codec.Send(msg); err != nil {
+				logs.Error("libnet:session send session message error(%v) session(%d)", err, s.ID())
 				return
 			}
 		case <-time.After(s.writeTimeOut):
 			//超时
+			logs.Emergency("libnet:session send session message timeout session(%d)", s.ID())
 			return
 		}
 	}
@@ -157,13 +162,18 @@ func (s *Session) recvLoop() {
 		}
 
 		data, err := s.codec.Receive()
-		fmt.Printf("recv msg :%v\n", data)
+		logs.Debug("libnet:session recv session message message(%v) session(%d)", data, s.ID())
+
 		if err != nil {
 			//记录错误
+			logs.Error("libnet:session recv session message error(%v) session(%d))", err, s.ID())
 			continue
+		} else {
+
 		}
 		if data == nil || len(data) == 0 {
 			//数据错误，直接关闭
+			logs.Emergency("libnet:session recv empty message and closed session(%d)", s.ID())
 			return
 		}
 		s.recvChan <- data
@@ -196,7 +206,7 @@ func (s *Session) close() error {
 		s.codec.Close()         //关闭连接
 		s.invokeCloseCallBack() //发送关闭的回调
 		s.closeFlag.Set(true)   //设置已关闭
-
+		logs.Info("libnet:session already closed session(%d)", s.ID())
 	})
 
 	return err
@@ -205,13 +215,14 @@ func (s *Session) close() error {
 //关闭session
 func (s *Session) Close() error {
 
+	logs.Info("libnet:session send Close message session(%d)", s.ID())
 	return s.close()
 }
 
 func (s *Session) parse(data interface{}) (mdata interface{}, msgId uint16, err error) {
 
 	//解析对象
-	reqData, ok := mdata.([]byte)
+	reqData, ok := data.([]byte)
 	if !ok {
 		err = SessionMsgNoSuchTypeError
 		return
@@ -225,7 +236,6 @@ func (s *Session) parse(data interface{}) (mdata interface{}, msgId uint16, err 
 	}
 	cmdUint16 := libio.GetUint16BE(cmdByte)
 	cmdObj := reqData[2:]
-	fmt.Println("%d,%v", cmdUint16, cmdObj)
 	mdata = cmdObj
 	msgId = cmdUint16
 	err = nil
@@ -288,6 +298,9 @@ func (s *Session) sendHeartMsg() {
 	err := s.Send(packet)
 	if err != nil {
 		//heart msg
+		logs.Error("libnet:session send session heart message error messageID(%d) err(%v)", heartMsgID, err)
+	} else {
+		logs.Debug("libnet:session send session heart message messageID(%d) data(%v)", heartMsgID, packet)
 	}
 
 }

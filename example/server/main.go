@@ -4,6 +4,7 @@ import (
 	"flag"
 	"time"
 
+	"github.com/wuqifei/server_lib/example/server/server_log"
 	"github.com/wuqifei/server_lib/libnet"
 	"github.com/wuqifei/server_lib/signal"
 )
@@ -16,6 +17,8 @@ func main() {
 func libServer() {
 	//解析命令行
 	flag.Parse()
+	server_log.LibLogger.SetLogger("console", "")
+
 	options := &libnet.ServerOptions{}
 	options.Network = "tcp"
 	options.Address = "127.0.0.1:6868"
@@ -24,8 +27,8 @@ func libServer() {
 	options.RecvQueueBuf = 10
 
 	options.SendTimeOut = time.Duration(180) * time.Second
-	options.RecvTimeOut = time.Duration(60) * time.Second //5s 超时间
-	options.HeartBeatTime = time.Duration(3) * time.Second
+	options.RecvTimeOut = time.Duration(180) * time.Second //5s 超时间
+	options.HeartBeatTime = time.Duration(60) * time.Second
 	options.ReadTimeOutTimes = 3
 	options.MaxRecvBufferSize = 8
 	options.MaxSendBufferSize = 8
@@ -33,7 +36,7 @@ func libServer() {
 	server := libnet.Serve(options)
 	server.RegistRoute(100, func(content []byte, wildMsg bool) (args []interface{}) {
 		args = make([]interface{}, 0)
-		args = append(args, 1000)
+		args = append(args, uint16(1000))
 		args = append(args, []byte{11, 22, 33, 44})
 		return args
 	}) //RegistHeartBeat

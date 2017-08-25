@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/wuqifei/server_lib/libio"
+	"github.com/wuqifei/server_lib/logs"
 )
 
 type ServerOptions struct {
@@ -46,5 +47,8 @@ func Serve(options *ServerOptions) *Server {
 	proto := libio.New(options.IsLittleIndian, options.MaxRecvBufferSize, options.MaxSendBufferSize)
 	server := NewServer(listener, proto)
 	server.Options = options
+	logs.Informational("libnet:Server Start")
+	//打印输出的logger
+	logs.Informational("libnet:network(%s),listento(%s),", options.Network, options.Address)
 	return server
 }

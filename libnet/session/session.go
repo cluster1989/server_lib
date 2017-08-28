@@ -2,6 +2,7 @@ package session
 
 import (
 	"errors"
+	"runtime"
 	"sync"
 	"time"
 
@@ -103,6 +104,10 @@ func (s *Session) recvChanLoop() {
 	defer s.Close()
 	for {
 		if s.IsClosed() {
+
+			//这里强制当前去程进入闲置
+			logs.Debug("libnet:session recv chan loop hasclosed id(%d)", s.ID())
+			runtime.Goexit()
 			return
 		}
 
@@ -135,6 +140,10 @@ func (s *Session) sendChanLoop() {
 	defer s.Close()
 	for {
 		if s.IsClosed() {
+
+			//这里强制当前去程进入闲置
+			logs.Debug("libnet:session send chan loop hasclosed id(%d)", s.ID())
+			runtime.Goexit()
 			return
 		}
 
@@ -158,6 +167,10 @@ func (s *Session) recvLoop() {
 
 	for {
 		if s.IsClosed() {
+
+			//这里强制当前去程进入闲置
+			logs.Debug("libnet:session recv loop hasclosed id(%d)", s.ID())
+			runtime.Goexit()
 			return
 		}
 
@@ -168,9 +181,8 @@ func (s *Session) recvLoop() {
 			//记录错误
 			logs.Error("libnet:session recv session message error(%v) session(%d))", err, s.ID())
 			continue
-		} else {
-
 		}
+
 		if data == nil || len(data) == 0 {
 			//数据错误，直接关闭
 			logs.Emergency("libnet:session recv empty message and closed session(%d)", s.ID())

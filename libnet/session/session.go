@@ -175,7 +175,7 @@ func (s *Session) recvLoop() {
 		}
 
 		data, err := s.codec.Receive()
-		logs.Debug("libnet:session recv session message message(%v) session(%d)", data, s.ID())
+		logs.Debug("libnet:session recv session message message(%#v) session(%d)", data, s.ID())
 
 		if err != nil {
 			//记录错误
@@ -188,8 +188,10 @@ func (s *Session) recvLoop() {
 			logs.Emergency("libnet:session recv empty message and closed session(%d)", s.ID())
 			return
 		}
-		s.recvChan <- data
-		//将数据放入缓冲池中
+		if  !s.IsClosed() {
+			//将数据放入缓冲池中
+			s.recvChan <- data
+		}
 	}
 }
 
@@ -213,11 +215,11 @@ func (s *Session) close() error {
 	var err error
 	s.once.Do(func() {
 
-		close(s.recvChan)
-		close(s.sendChan)
 		s.codec.Close()         //关闭连接
 		s.invokeCloseCallBack() //发送关闭的回调
 		s.closeFlag.Set(true)   //设置已关闭
+		close(s.recvChan)
+		close(s.sendChan)
 		logs.Info("libnet:session already closed session(%d)", s.ID())
 	})
 

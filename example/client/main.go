@@ -11,6 +11,7 @@ import (
 )
 
 func main() {
+
 	server := "127.0.0.1:6868"
 	tcpAddr, _ := net.ResolveTCPAddr("tcp4", server)
 	conn, _ := net.DialTCP("tcp", nil, tcpAddr)
@@ -29,8 +30,8 @@ func send(conn *net.TCPConn) {
 		lengthb = append(lengthb, b...)
 		lengthb = append(lengthb, ([]byte)("abcde")...)
 		conn.Write(lengthb)
-		fmt.Printf("send msg :%v\n", lengthb)
-		time.Sleep(time.Duration(20) * time.Second)
+		fmt.Printf("send msg :%#v\n", lengthb)
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 }
 
@@ -40,6 +41,6 @@ func recv(conn *net.TCPConn) {
 		length, _ := conn.Read(buf)
 		data := buf[:length]
 
-		fmt.Printf("受到消息:%v \n", data)
+		fmt.Printf("recv 消息:%#v \n", data)
 	}
 }

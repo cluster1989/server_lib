@@ -9,13 +9,25 @@ import (
 	"github.com/wuqifei/server_lib/libnet"
 	"github.com/wuqifei/server_lib/logs"
 	"github.com/wuqifei/server_lib/signal"
+	"os"
+	"runtime/pprof"
 )
 
 func main() {
 	initLogger()
 	libServer()
-	ips := []string{"localhost:8080"}
+	ips := []string{":8080"}
 	perf.Init(ips)
+
+	f, err := os.Create("cpu.prof")
+    if err != nil {
+        logs.Error(err)
+    }
+    pprof.StartCPUProfile(f)
+    go func () {
+		time.Sleep(time.Duration(60*20) * time.Second)
+		pprof.StopCPUProfile()
+    	}()
 	signal.InitSignal()
 }
 
@@ -24,6 +36,8 @@ func initLogger() {
 	logger := logs.GetLibLogger()
 	logger.SetLogger("console", `{"color":false}`)
 	logger.EnableFuncCallDepth(true)
+
+	
 }
 
 func libServer() {
@@ -32,7 +46,7 @@ func libServer() {
 
 	options := &libnet.ServerOptions{}
 	options.Network = "tcp"
-	options.Address = "127.0.0.1:6868"
+	options.Address = ":6868"
 	options.IsLittleIndian = false
 	options.SendQueueBuf = 10
 	options.RecvQueueBuf = 10
@@ -41,8 +55,8 @@ func libServer() {
 	options.RecvTimeOut = time.Duration(180) * time.Second //5s 超时间
 	options.HeartBeatTime = time.Duration(60) * time.Second
 	options.ReadTimeOutTimes = 3
-	options.MaxRecvBufferSize = 8
-	options.MaxSendBufferSize = 8
+	options.MaxRecvBufferSize = 8 * 1024
+	options.MaxSendBufferSize = 8 * 1024
 
 	server := libnet.Serve(options)
 	server.RegistRoute(100, func(content []byte, wildMsg bool) (args []interface{}) {

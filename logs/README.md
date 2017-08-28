@@ -2,11 +2,6 @@
 logs is a Go logs manager. It can use many logs adapters. The repo is inspired by `database/sql` .
 
 
-## How to install?
-
-	go get github.com/astaxie/beego/logs
-
-
 ## What adapters are supported?
 
 As of now this logs support console, file,smtp and conn.
@@ -14,11 +9,7 @@ As of now this logs support console, file,smtp and conn.
 
 ## How to use it?
 
-First you must import it
-
-	import (
-		"github.com/astaxie/beego/logs"
-	)
+I just use "github.com/astaxie/beego/logs", and did a littel change.
 
 Then init a Log (example with console adapter)
 

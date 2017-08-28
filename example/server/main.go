@@ -4,22 +4,31 @@ import (
 	"flag"
 	"time"
 
+	"github.com/wuqifei/server_lib/perf"
+
 	"github.com/wuqifei/server_lib/libnet"
 	"github.com/wuqifei/server_lib/logs"
 	"github.com/wuqifei/server_lib/signal"
 )
 
 func main() {
+	initLogger()
 	libServer()
+	ips := []string{"localhost:8080"}
+	perf.Init(ips)
 	signal.InitSignal()
+}
+
+func initLogger() {
+
+	logger := logs.GetLibLogger()
+	logger.SetLogger("console", `{"color":false}`)
+	logger.EnableFuncCallDepth(true)
 }
 
 func libServer() {
 	//解析命令行
 	flag.Parse()
-	logger := logs.GetLibLogger()
-	logger.SetLogger("console", `{"color":false}`)
-	logger.EnableFuncCallDepth(true)
 
 	options := &libnet.ServerOptions{}
 	options.Network = "tcp"

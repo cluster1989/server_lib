@@ -1,9 +1,10 @@
 package signal
 
 import (
-	"fmt"
 	"os"
 	"syscall"
+
+	"github.com/wuqifei/server_lib/logs"
 )
 
 // InitSignal register signals handler.
@@ -12,7 +13,7 @@ func InitSignal() {
 	defer close(c)
 	for {
 		s := <-c
-		fmt.Printf("server get a signal %s", s.String())
+		logs.Emergency("server get a signal %s", s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP, syscall.SIGINT:
 			return

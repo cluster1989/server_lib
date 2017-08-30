@@ -15,8 +15,8 @@ import (
 )
 
 type Server struct {
-	clientGroup  *concurrent.SyncGroupMap
-	reflectGroup *concurrent.SyncUint64GroupMap
+	clientGroup  *concurrent.ConcurrentIDGroupMap
+	reflectGroup *concurrent.ConcurrentIDGroupMap
 	listerer     net.Listener
 	protocol     def.Protocol
 	Options      *ServerOptions
@@ -25,8 +25,8 @@ type Server struct {
 
 func NewServer(l net.Listener, p def.Protocol) *Server {
 	return &Server{
-		clientGroup:  concurrent.NewGroup(),
-		reflectGroup: concurrent.NewUint64Group(),
+		clientGroup:  concurrent.NewCocurrentGroup(),
+		reflectGroup: concurrent.NewCocurrentGroup(),
 		timeWheel:    libtime.NewTimerWheel(),
 		listerer:     l,
 		protocol:     p,
@@ -77,17 +77,9 @@ func (server *Server) accept() (*session.Session, error) {
 		}
 		codec := server.protocol.NewCodec(conn)
 		session := session.NewSession(codec, server.Options.ReadTimeOutTimes, server.Options.SendQueueBuf, server.Options.RecvQueueBuf, server.Options.RecvTimeOut, server.Options.SendTimeOut)
-		server.DoHeartTask(session)
+
 		return session, nil
 	}
-}
-
-func (s *Server) DoHeartTask(sess *session.Session) {
-
-	task := sess.SetupHeartTask()
-	taskID := s.timeWheel.AddTask(s.Options.HeartBeatTime, -1, task)
-
-	sess.HeartTaskID = taskID
 }
 
 func (s *Server) Stop() {
@@ -209,4 +201,16 @@ func (s *Server) BroadCastMsg(groups []uint64, ack []interface{}) {
 		}
 	}
 
+}
+
+// 启动该用户的心跳连接
+func (s *Server) EnableUserHeartBeat(userID uint64) {
+	if !s.QueryUserIDIsExists(userID) {
+		return
+	}
+	sess := s.clientGroup.Get(userID).(*session.Session)
+	task := sess.SetupHeartTask()
+	taskID := s.timeWheel.AddTask(s.Options.HeartBeatTime, -1, task)
+
+	sess.HeartTaskID = taskID
 }

@@ -158,6 +158,7 @@ func (s *Server) RegistHeartBeat(msgType uint16, ret def.MessageHandlerWithRet) 
 	message.RegisterHeartBeat(msgType, ret)
 }
 
+// 查看用户是否登陆，存在
 func (s *Server) QueryUserIDIsExists(uniqueID uint64) bool {
 	sess := s.clientGroup.Get(uniqueID)
 	if sess == nil {
@@ -176,7 +177,8 @@ func (s *Server) querySessionIDISExists(sessID uint64) bool {
 
 }
 
-func (s *Server) CloseUser(userID uint64) {
+// 禁用某个用户
+func (s *Server) DisableUser(userID uint64) {
 	if !s.QueryUserIDIsExists(userID) {
 		return
 	}
@@ -213,4 +215,13 @@ func (s *Server) EnableUserHeartBeat(userID uint64) {
 	taskID := s.timeWheel.AddTask(s.Options.HeartBeatTime, -1, task)
 
 	sess.HeartTaskID = taskID
+}
+
+// 关闭用户心跳连接
+func (s *Server) DisableUserHeartBeat(userID uint64) {
+	if !s.QueryUserIDIsExists(userID) {
+		return
+	}
+	sess := s.clientGroup.Get(userID).(*session.Session)
+	s.timeWheel.Remove(sess.HeartTaskID)
 }

@@ -1,4 +1,4 @@
-package conf_tool
+package libconf
 
 import (
 	"bufio"

@@ -11,6 +11,10 @@
 
 去除代码中的用户管理模块，时间轮模块，保持代码功能单一性
 
+如果只是单纯使用，tcp的库，则只需要引入libnet,libio,concurrent三个包,其他的包可以不引入
+
+libtime，默认为用户实现了时间轮算法，可以直接使用
+
 第三方库：
 
     github.com/garyburd/redigo/redis    

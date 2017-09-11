@@ -38,9 +38,6 @@ type ServerOptions struct {
 	SendTimeOut time.Duration
 	RecvTimeOut time.Duration
 
-	//server 心跳时间
-	HeartBeatTime time.Duration
-
 	// 允许超时次数
 	ReadTimeOutTimes int
 

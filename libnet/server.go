@@ -10,24 +10,19 @@ import (
 	"github.com/wuqifei/server_lib/libnet/def"
 	"github.com/wuqifei/server_lib/libnet/message"
 	"github.com/wuqifei/server_lib/libnet/session"
-	"github.com/wuqifei/server_lib/libtime"
 	"github.com/wuqifei/server_lib/logs"
 )
 
 type Server struct {
 	clientGroup  *concurrent.ConcurrentIDGroupMap
-	reflectGroup *concurrent.ConcurrentIDGroupMap
 	listerer     net.Listener
 	protocol     def.Protocol
 	Options      *ServerOptions
-	timeWheel    *libtime.TimerWheel
 }
 
 func NewServer(l net.Listener, p def.Protocol) *Server {
 	return &Server{
 		clientGroup:  concurrent.NewCocurrentGroup(),
-		reflectGroup: concurrent.NewCocurrentGroup(),
-		timeWheel:    libtime.NewTimerWheel(),
 		listerer:     l,
 		protocol:     p,
 	}
@@ -37,6 +32,7 @@ func (server *Server) Listener() net.Listener {
 	return server.listerer
 }
 
+// 启动并且监听端口
 func (server *Server) Run() {
 	logs.Informational("libnet:Start to listen")
 
@@ -77,35 +73,33 @@ func (server *Server) accept() (*session.Session, error) {
 		}
 		codec := server.protocol.NewCodec(conn)
 		session := session.NewSession(codec, server.Options.ReadTimeOutTimes, server.Options.SendQueueBuf, server.Options.RecvQueueBuf, server.Options.RecvTimeOut, server.Options.SendTimeOut)
-
+		server.clientGroup.Set(session.ID(), session)
 		return session, nil
 	}
 }
 
+// tcp服务关闭
 func (s *Server) Stop() {
 	s.listerer.Close()
-	s.timeWheel.Stop()
-	s.clientGroup.Dispose()
+	//释放所有的连接
 	s.clientGroup.Dispose()
 }
 
 func (s *Server) sessionClosedCallback(sess *session.Session) {
-	//删除id
-	userID := s.reflectGroup.Get(sess.ID())
-	s.timeWheel.CancelTimer(sess.HeartTaskID)
 
-	if userID == nil {
-		return
+	// 删除这个session
+	se := s.clientGroup.Get(sess.ID())
+	if s != nil && se.(*session.Session) == sess {
+
+		s.clientGroup.Del(sess.ID())
 	}
-	s.clientGroup.Del(userID.(uint64))
-	s.reflectGroup.Del(sess.ID())
 }
 
 func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *session.Session, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			//这里并不信任逻辑层的输入
-			logs.Error("libnet has recevice a panic(%v)", r)
+			logs.Error("libnet: has recevice a panic(%v)", r)
 		}
 	}()
 
@@ -116,112 +110,71 @@ func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *
 	}
 	handler := message.GetHandler(msgID)
 
-	isWildMsg := !s.querySessionIDISExists(sess.ID())
-
-	ackData := handler(data.([]byte), isWildMsg)
+	//执行回调方法
+	ackData := handler(data.([]byte), sess.ID())
 
 	length := len(ackData)
-	if length < 2 {
+	if length != 2 {
 		//服务器错误
 		logs.Error("libnet:server ackdata length error msgID(%d),sessionId(%d)", msgID, sess.ID())
 		return
 	}
 
 	var packet []byte
-	if length >= 2 {
-		resID := ackData[0].(uint16)
-		resData := ackData[1].([]byte)
+	resID := ackData[0].(uint16)
+	resData := ackData[1].([]byte)
+	packet = sess.PackData(resID, resData)
 
-		packet = sess.PackData(resID, resData)
-
-		if length == 3 {
-			//组合session
-			uniqueID := ackData[2].(uint64)
-			//与session一起组合
-			s.clientGroup.Set(uniqueID, sess)
-			s.reflectGroup.Set(sess.ID(), uniqueID)
-			logs.Emergency("libnet:record user ID(%d) and essionID(%d)", uniqueID, sess.ID())
-		}
-	}
 	if len(packet) > 0 {
 		//如果有数据 则发送
 		sess.Send(packet)
 	}
 }
 
+// 注册路由
 func (s *Server) RegistRoute(msgType uint16, ret def.MessageHandlerWithRet) {
 	logs.Info("libnet:registe route (%d)", msgType)
 	message.Register(msgType, ret)
 }
 
-func (s *Server) RegistHeartBeat(msgType uint16, ret def.MessageHandlerWithRet) {
-	message.RegisterHeartBeat(msgType, ret)
-}
-
-// 查看用户是否登陆，存在
-func (s *Server) QueryUserIDIsExists(uniqueID uint64) bool {
-	sess := s.clientGroup.Get(uniqueID)
-	if sess == nil {
-		return false
-	} else {
-		return true
-	}
-}
-
-func (s *Server) querySessionIDISExists(sessID uint64) bool {
-	uniqueID := s.reflectGroup.Get(sessID)
-	if uniqueID != nil {
-		return true
-	}
-	return false
-
-}
-
 // 禁用某个用户
-func (s *Server) DisableUser(userID uint64) {
-	if !s.QueryUserIDIsExists(userID) {
-		return
+func (s *Server) DisableSession(sessID uint64) error {
+	sessInterface := s.clientGroup.Get(sessID)
+	if sessInterface == nil {
+		logs.Error("libnet:DisableSession error(%v)", def.SessionCannotFoundErr)
+		return def.SessionCannotFoundErr
 	}
-
-	sess := s.clientGroup.Get(userID).(*session.Session)
-	sess.Close()
+	sess := sessInterface.(*session.Session)
+	err := sess.Close()
+	return err
 }
 
-// 一样第一个是msgid ,第二个msg data
-func (s *Server) BroadCastMsg(groups []uint64, ack []interface{}) {
+// 发送确定的信息，给指定的session用户
+func (s *Server) BroadCastConstMsg(groups []uint64, msg def.LibnetMessage, failed chan <- []uint64) {
+
+	failedUser := []uint64{}
+
 	for _, id := range groups {
-		if !s.QueryUserIDIsExists(id) {
-			logs.Error("libnet:broadcast user is not existed userID(%d))", id)
-			continue
-		}
-		sess := s.clientGroup.Get(id).(*session.Session)
-		data := sess.PackData(ack[0].(uint16), ack[1].([]byte))
-		err := sess.Send(data)
-		if err != nil {
-			//记录
-			logs.Error("libnet:braod cast msg error msgId(%d),msgData(%v),error(%v)", ack[0].(uint16), ack[1].([]byte), err)
+
+		if err := s.SendMessage2Sess(id, msg);err != nil {
+
+			failedUser = append(failedUser, id)
 		}
 	}
 
+	//将失败的用户返回去
+	failed <-  failedUser
 }
 
-// 启动该用户的心跳连接
-func (s *Server) EnableUserHeartBeat(userID uint64) {
-	if !s.QueryUserIDIsExists(userID) {
-		return
+func (s *Server) SendMessage2Sess(sessID uint64, msg def.LibnetMessage) error{
+
+	sessInterface := s.clientGroup.Get(sessID)
+	if sessInterface == nil {
+		logs.Error("libnet:DisableSession error(%v)", def.SessionCannotFoundErr)
+		return def.SessionCannotFoundErr
 	}
-	sess := s.clientGroup.Get(userID).(*session.Session)
-	task := sess.SetupHeartTask()
-	taskID := s.timeWheel.AddTask(s.Options.HeartBeatTime, -1, task)
-
-	sess.HeartTaskID = taskID
+	sess := sessInterface.(*session.Session)
+	data := sess.PackData(msg.MsgID, msg.Content)
+	return sess.Send(data)
 }
 
-// 关闭用户心跳连接
-func (s *Server) DisableUserHeartBeat(userID uint64) {
-	if !s.QueryUserIDIsExists(userID) {
-		return
-	}
-	sess := s.clientGroup.Get(userID).(*session.Session)
-	s.timeWheel.Remove(sess.HeartTaskID)
-}

@@ -9,8 +9,6 @@ import (
 	"github.com/wuqifei/server_lib/concurrent"
 	"github.com/wuqifei/server_lib/libio"
 	"github.com/wuqifei/server_lib/libnet/def"
-	"github.com/wuqifei/server_lib/libnet/message"
-	"github.com/wuqifei/server_lib/libtime"
 	"github.com/wuqifei/server_lib/logs"
 )
 
@@ -34,9 +32,6 @@ type Session struct {
 	writeTimeOut     time.Duration           //写入超时
 	readTimeOutTimes int                     // 允许超时次数
 	timeOutTimes     *concurrent.AtomicInt32 //已经超时次数
-	//心跳id
-	HeartTaskID int64
-	HeartTask   *libtime.TimerTaskTimeOut
 }
 
 func init() {
@@ -215,11 +210,13 @@ func (s *Session) close() error {
 	var err error
 	s.once.Do(func() {
 
-		s.codec.Close()         //关闭连接
-		s.invokeCloseCallBack() //发送关闭的回调
 		s.closeFlag.Set(true)   //设置已关闭
-		close(s.recvChan)
-		close(s.sendChan)
+
+		close(s.recvChan) 		//关闭接收通道
+		close(s.sendChan) 		//关闭发送通道
+		s.codec.Close()   		//关闭当前连接
+		s.invokeCloseCallBack() //发送关闭的回调
+		
 		logs.Info("libnet:session already closed session(%d)", s.ID())
 	})
 
@@ -284,37 +281,4 @@ func (s *Session) PackData(msgID uint16, data []byte) []byte {
 	libio.PutUint16BE(packet, msgID)
 	packet = append(packet, data...)
 	return packet
-}
-
-func (s *Session) SetupHeartTask() (task *libtime.TimerTaskTimeOut) {
-
-	if s.HeartTask == nil {
-
-		s.closeMutex.Lock()
-		task := &libtime.TimerTaskTimeOut{}
-		task.Content = nil
-		task.Callback = func(backData interface{}) {
-			s.sendHeartMsg()
-		}
-
-		s.HeartTask = task
-		s.closeMutex.Unlock()
-	}
-	return s.HeartTask
-}
-
-func (s *Session) sendHeartMsg() {
-	handler := message.GetHeartBeatHandler()
-	ackData := handler(nil, true)
-	heartMsgID := ackData[0].(uint16)
-	heartData := ackData[1].([]byte)
-	packet := s.PackData(heartMsgID, heartData)
-	err := s.Send(packet)
-	if err != nil {
-		//heart msg
-		logs.Error("libnet:session send session heart message error messageID(%d) err(%v)", heartMsgID, err)
-	} else {
-		logs.Debug("libnet:session send session heart message messageID(%d) data(%v)", heartMsgID, packet)
-	}
-
 }

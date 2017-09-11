@@ -11,3 +11,8 @@ type Codec interface {
 	Send(interface{}) error
 	Close() error
 }
+
+type LibnetMessage struct {
+	MsgID uint16
+	Content []byte
+}

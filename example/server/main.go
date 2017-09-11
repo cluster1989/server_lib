@@ -64,5 +64,11 @@ func libServer() {
 		args = append(args, []byte{11, 22, 33, 44})
 		return args
 	})
+
+	server.OnClose(OnClose)
+
 	go server.Run()
+}
+func OnClose (sessID uint64) {
+	logs.Info("sessID:%l",sessID)
 }

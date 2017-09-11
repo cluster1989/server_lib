@@ -64,19 +64,27 @@ server := libnet.Serve(options)
 // 注册服务
 // 这里需要注意的是，心跳的注册，和一般的注册，最好分开，因为我无法区分哪个是心跳，所以分别作出了两个接口
 
+消息体全部统一，会返回是哪个session返回的消息调用
+
 ```
-    server.RegistRoute(100, func(content []byte, wildMsg bool) (args []interface{}) {
+    server.RegistRoute(100, func(content []byte, sessionID uint64) (args []interface{}) {
 		args = make([]interface{}, 0)
 		args = append(args, uint16(1000))
 		args = append(args, []byte{11, 22, 33, 44})
 		return args
-	}) //RegistHeartBeat
-	server.RegistHeartBeat(102, func(content []byte, wildMsg bool) (args []interface{}) {
-		args = make([]interface{}, 0)
-		args = append(args, uint16(1002))
-		args = append(args, []byte{22, 33, 44, 55})
-		return args
 	})
+```
+
+// session 关闭的回调
+
+```
+
+server.OnClose(OnClose)
+
+func OnClose (sessID uint64) {
+	logs.Info("sessID:%l",sessID)
+}
+
 ```
 
 // 启动服务

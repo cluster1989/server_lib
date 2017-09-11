@@ -18,6 +18,7 @@ type Server struct {
 	listerer     net.Listener
 	protocol     def.Protocol
 	Options      *ServerOptions
+	onClose 	func(sessID uint64)()
 }
 
 func NewServer(l net.Listener, p def.Protocol) *Server {
@@ -85,13 +86,17 @@ func (s *Server) Stop() {
 	s.clientGroup.Dispose()
 }
 
-func (s *Server) sessionClosedCallback(sess *session.Session) {
-
+func (s *Server) sessionClosedCallback(sess *session.Session) {	
 	// 删除这个session
 	se := s.clientGroup.Get(sess.ID())
 	if s != nil && se.(*session.Session) == sess {
 
 		s.clientGroup.Del(sess.ID())
+		s.onClose(sess.ID())
+	}
+
+	if se != nil {
+		logs.Debug("libnet:onclose callback: (%l), se(%l)",sess.ID(),se.(*session.Session).ID())
 	}
 }
 
@@ -178,3 +183,12 @@ func (s *Server) SendMessage2Sess(sessID uint64, msg def.LibnetMessage) error{
 	return sess.Send(data)
 }
 
+// 设置session关闭的回调
+func (s *Server)OnClose(callback func(sessID uint64)()) {
+	if callback == nil {
+
+		logs.Error("libnet:OnClose set nil")
+		panic("libnet:OnClose set nil")
+	}
+	s.onClose = callback
+}

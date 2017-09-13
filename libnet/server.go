@@ -14,18 +14,19 @@ import (
 )
 
 type Server struct {
-	clientGroup  *concurrent.ConcurrentIDGroupMap
-	listerer     net.Listener
-	protocol     def.Protocol
-	Options      *ServerOptions
-	onClose 	func(sessID uint64)()
+	clientGroup *concurrent.ConcurrentIDGroupMap
+	listerer    net.Listener
+	protocol    def.Protocol
+	Options     *ServerOptions
+	OnClose     func(sessID uint64)
+	OnConnect   func(sessID uint64)
 }
 
 func NewServer(l net.Listener, p def.Protocol) *Server {
 	return &Server{
-		clientGroup:  concurrent.NewCocurrentGroup(),
-		listerer:     l,
-		protocol:     p,
+		clientGroup: concurrent.NewCocurrentGroup(),
+		listerer:    l,
+		protocol:    p,
 	}
 }
 
@@ -75,6 +76,9 @@ func (server *Server) accept() (*session.Session, error) {
 		codec := server.protocol.NewCodec(conn)
 		session := session.NewSession(codec, server.Options.ReadTimeOutTimes, server.Options.SendQueueBuf, server.Options.RecvQueueBuf, server.Options.RecvTimeOut, server.Options.SendTimeOut)
 		server.clientGroup.Set(session.ID(), session)
+		if server.OnConnect != nil {
+			server.OnConnect(session.ID())
+		}
 		return session, nil
 	}
 }
@@ -86,17 +90,19 @@ func (s *Server) Stop() {
 	s.clientGroup.Dispose()
 }
 
-func (s *Server) sessionClosedCallback(sess *session.Session) {	
+func (s *Server) sessionClosedCallback(sess *session.Session) {
 	// 删除这个session
 	se := s.clientGroup.Get(sess.ID())
 	if s != nil && se.(*session.Session) == sess {
 
 		s.clientGroup.Del(sess.ID())
-		s.onClose(sess.ID())
+		if s.OnClose != nil {
+			s.OnClose(sess.ID())
+		}
 	}
 
 	if se != nil {
-		logs.Debug("libnet:onclose callback: (%l), se(%l)",sess.ID(),se.(*session.Session).ID())
+		logs.Debug("libnet:onclose callback: (%l), se(%l)", sess.ID(), se.(*session.Session).ID())
 	}
 }
 
@@ -155,23 +161,23 @@ func (s *Server) DisableSession(sessID uint64) error {
 }
 
 // 发送确定的信息，给指定的session用户
-func (s *Server) BroadCastConstMsg(groups []uint64, msg def.LibnetMessage, failed chan <- []uint64) {
+func (s *Server) BroadCastConstMsg(groups []uint64, msg def.LibnetMessage, failed chan<- []uint64) {
 
 	failedUser := []uint64{}
 
 	for _, id := range groups {
 
-		if err := s.SendMessage2Sess(id, msg);err != nil {
+		if err := s.SendMessage2Sess(id, msg); err != nil {
 
 			failedUser = append(failedUser, id)
 		}
 	}
 
 	//将失败的用户返回去
-	failed <-  failedUser
+	failed <- failedUser
 }
 
-func (s *Server) SendMessage2Sess(sessID uint64, msg def.LibnetMessage) error{
+func (s *Server) SendMessage2Sess(sessID uint64, msg def.LibnetMessage) error {
 
 	sessInterface := s.clientGroup.Get(sessID)
 	if sessInterface == nil {
@@ -181,14 +187,4 @@ func (s *Server) SendMessage2Sess(sessID uint64, msg def.LibnetMessage) error{
 	sess := sessInterface.(*session.Session)
 	data := sess.PackData(msg.MsgID, msg.Content)
 	return sess.Send(data)
-}
-
-// 设置session关闭的回调
-func (s *Server)OnClose(callback func(sessID uint64)()) {
-	if callback == nil {
-
-		logs.Error("libnet:OnClose set nil")
-		panic("libnet:OnClose set nil")
-	}
-	s.onClose = callback
 }

@@ -122,7 +122,12 @@ func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *
 	handler := message.GetHandler(msgID)
 
 	//执行回调方法
-	ackData := handler(data.([]byte), sess.ID())
+	ackData, ackErr := handler(data.([]byte), sess.ID())
+	if ackErr != nil {
+		//服务器处理错误
+		logs.Error("libnet:server ackdata handler error (%v)", ackErr)
+		return
+	}
 
 	length := len(ackData)
 	if length != 2 {

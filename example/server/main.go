@@ -6,11 +6,12 @@ import (
 
 	"github.com/wuqifei/server_lib/perf"
 
+	"os"
+	"runtime/pprof"
+
 	"github.com/wuqifei/server_lib/libnet"
 	"github.com/wuqifei/server_lib/logs"
 	"github.com/wuqifei/server_lib/signal"
-	"os"
-	"runtime/pprof"
 )
 
 func main() {
@@ -20,14 +21,14 @@ func main() {
 	perf.Init(ips)
 
 	f, err := os.Create("cpu.prof")
-    if err != nil {
-        logs.Error(err)
-    }
-    pprof.StartCPUProfile(f)
-    go func () {
+	if err != nil {
+		logs.Error(err)
+	}
+	pprof.StartCPUProfile(f)
+	go func() {
 		time.Sleep(time.Duration(60*20) * time.Second)
 		pprof.StopCPUProfile()
-    	}()
+	}()
 	signal.InitSignal()
 }
 
@@ -37,7 +38,6 @@ func initLogger() {
 	logger.SetLogger("console", `{"color":false}`)
 	logger.EnableFuncCallDepth(true)
 
-	
 }
 
 func libServer() {
@@ -58,17 +58,17 @@ func libServer() {
 	options.MaxSendBufferSize = 8 * 1024
 
 	server := libnet.Serve(options)
-	server.RegistRoute(100, func(content []byte, sessionID uint64) (args []interface{}) {
+	server.RegistRoute(100, func(content []byte, sessionID uint64) (args []interface{}, err error) {
 		args = make([]interface{}, 0)
 		args = append(args, uint16(1000))
 		args = append(args, []byte{11, 22, 33, 44})
-		return args
+		return args, nil
 	})
 
-	server.OnClose(OnClose)
+	server.OnClose = OnClose
 
 	go server.Run()
 }
-func OnClose (sessID uint64) {
-	logs.Info("sessID:%l",sessID)
+func OnClose(sessID uint64) {
+	logs.Info("sessID:%l", sessID)
 }

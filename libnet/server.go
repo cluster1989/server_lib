@@ -182,6 +182,14 @@ func (s *Server) BroadCastConstMsg(groups []uint64, msg def.LibnetMessage, faile
 	failed <- failedUser
 }
 
+func (s *Server) Check(sessID uint64) bool {
+	sessInterface := s.clientGroup.Get(sessID)
+	if sessInterface == nil {
+		return false
+	}
+	return true
+}
+
 func (s *Server) SendMessage2Sess(sessID uint64, msg def.LibnetMessage) error {
 
 	sessInterface := s.clientGroup.Get(sessID)

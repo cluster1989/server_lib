@@ -39,7 +39,7 @@ type ServerOptions struct {
 func Serve(options *ServerOptions) *Server {
 	listener, err := net.Listen(options.Network, options.Address)
 	if err != nil {
-		panic("server init error")
+		panic(err)
 	}
 	proto := libio.New(options.IsLittleIndian, options.MaxRecvBufferSize, options.MaxSendBufferSize)
 	server := NewServer(listener, proto)

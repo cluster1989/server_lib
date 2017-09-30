@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/wuqifei/server_lib/libgrpc"
+	"github.com/wuqifei/server_lib/libgrpc/test/pb"
 	"github.com/wuqifei/server_lib/signal"
-	"github.com/wuqifei/test/libgrpc"
-	"github.com/wuqifei/test/libgrpc/test/pb"
 	"google.golang.org/grpc/grpclog"
 )
 

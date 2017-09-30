@@ -3,9 +3,9 @@ package main
 import (
 	"time"
 
+	"github.com/wuqifei/server_lib/etcd"
 	"github.com/wuqifei/server_lib/logs"
 	"github.com/wuqifei/server_lib/signal"
-	"github.com/wuqifei/test/etcd"
 )
 
 func main() {

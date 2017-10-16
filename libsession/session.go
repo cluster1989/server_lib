@@ -2,13 +2,23 @@ package libsession
 
 import (
 	"context"
-	"net"
 	"sync"
+	"time"
+
+	"github.com/wuqifei/server_lib/concurrent"
+
+	"github.com/wuqifei/server_lib/libnet/def"
 )
 
 // session的配置
 type Options struct {
-	MaxAge int //最大的存在秒数
+	//这个session，最大的存在时间，秒
+	MaxAge       int
+	ReadTimeout  time.Duration //读取的超时
+	WriteTimeout time.Duration //写入的超时
+
+	// 允许的超时次数
+	ReadTimeoutTimes int
 }
 
 // Session的接口
@@ -25,8 +35,11 @@ type session struct {
 	ID     uint64
 	CTX    context.Context
 	Cancel context.CancelFunc
-	conn   net.Conn
+	conn   def.Conn
 	sync.Mutex
+
+	//已经超时的次数
+	timeoutTimes *concurrent.AtomicInt32
 }
 
 func New() Session {

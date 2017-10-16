@@ -24,7 +24,7 @@ type Server struct {
 
 func NewServer(l net.Listener, p def.Protocol) *Server {
 	return &Server{
-		clientGroup: concurrent.NewCocurrentGroup(),
+		clientGroup: concurrent.NewCocurrentIDGroup(),
 		listerer:    l,
 		protocol:    p,
 	}

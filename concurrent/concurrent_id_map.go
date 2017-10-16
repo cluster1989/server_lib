@@ -22,7 +22,7 @@ type ConcurrentIDGroupMap struct {
 }
 
 // 新建一个map
-func NewCocurrentGroup() *ConcurrentIDGroupMap {
+func NewCocurrentIDGroup() *ConcurrentIDGroupMap {
 	group := &ConcurrentIDGroupMap{}
 	for i := 0; i < len(group.SyncMaps); i++ {
 		group.SyncMaps[i].Items = make(map[uint64]interface{})
@@ -39,6 +39,9 @@ func (g *ConcurrentIDGroupMap) Dispose() {
 			syncIDMap := &g.SyncMaps[i]
 			syncIDMap.Lock()
 			for key, item := range syncIDMap.Items {
+
+				delete(syncIDMap.Items, key)
+				g.disposeWait.Done()
 				var err error
 				switch item.(type) {
 				case io.Closer:
@@ -47,7 +50,6 @@ func (g *ConcurrentIDGroupMap) Dispose() {
 				default:
 				}
 				//从group中删除
-				delete(syncIDMap.Items, key)
 				if err != nil {
 					logs.Error("concurrent map :dispose map error:%d", key)
 				}

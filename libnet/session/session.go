@@ -20,7 +20,7 @@ var globalSessionId *concurrent.AtomicUint64
 type Session struct {
 	onRecv        func(data interface{}, msgId uint16, sess *Session, err error)
 	id            uint64
-	codec         def.Codec
+	conn          def.Conn
 	sendChan      chan interface{}
 	recvChan      chan interface{}
 	closeFlag     *concurrent.AtomicBoolean
@@ -38,14 +38,14 @@ func init() {
 	globalSessionId = concurrent.NewAtomicUint64(0)
 }
 
-func NewSession(codec def.Codec, readTimeOutTimes, sendChanSize, recvChanSize int, readTimeOut, writeTimeOut time.Duration) *Session {
-	return newSession(codec, readTimeOutTimes, sendChanSize, recvChanSize, readTimeOut, writeTimeOut)
+func NewSession(conn def.Conn, readTimeOutTimes, sendChanSize, recvChanSize int, readTimeOut, writeTimeOut time.Duration) *Session {
+	return newSession(conn, readTimeOutTimes, sendChanSize, recvChanSize, readTimeOut, writeTimeOut)
 }
 
-func newSession(codec def.Codec, readTimeOutTimes, sendChanSize int, recvChanSize int, readTimeOut, writeTimeOut time.Duration) *Session {
+func newSession(conn def.Conn, readTimeOutTimes, sendChanSize int, recvChanSize int, readTimeOut, writeTimeOut time.Duration) *Session {
 
 	session := &Session{}
-	session.codec = codec
+	session.conn = conn
 	session.id = globalSessionId.IncrementAndGet()
 	session.closeFlag = concurrent.NewAtomicBoolean(false) //默认未关闭
 	session.once = &sync.Once{}
@@ -87,8 +87,8 @@ func (s *Session) ID() uint64 {
 	return s.id
 }
 
-func (s *Session) Codec() def.Codec {
-	return s.codec
+func (s *Session) Conn() def.Conn {
+	return s.conn
 }
 
 func (s *Session) IsClosed() bool {
@@ -145,7 +145,7 @@ func (s *Session) sendChanLoop() {
 		select {
 		case msg := <-s.sendChan:
 			logs.Debug("libnet:session send session message message(%v) session(%d)", msg, s.ID())
-			if err := s.codec.Send(msg); err != nil {
+			if err := s.conn.Send(msg); err != nil {
 				logs.Error("libnet:session send session message error(%v) session(%d)", err, s.ID())
 				return
 			}
@@ -169,7 +169,7 @@ func (s *Session) recvLoop() {
 			return
 		}
 
-		data, err := s.codec.Receive()
+		data, err := s.conn.Receive()
 		logs.Debug("libnet:session recv session message message(%#v) session(%d)", data, s.ID())
 
 		if err != nil {
@@ -183,7 +183,7 @@ func (s *Session) recvLoop() {
 			logs.Emergency("libnet:session recv empty message and closed session(%d)", s.ID())
 			return
 		}
-		if  !s.IsClosed() {
+		if !s.IsClosed() {
 			//将数据放入缓冲池中
 			s.recvChan <- data
 		}
@@ -195,7 +195,7 @@ func (s *Session) Send(msg interface{}) error {
 		return SessionClosedError
 	}
 	if s.sendChan == nil {
-		return s.codec.Send(msg)
+		return s.conn.Send(msg)
 	} else {
 		s.sendChan <- msg
 	}
@@ -210,13 +210,13 @@ func (s *Session) close() error {
 	var err error
 	s.once.Do(func() {
 
-		s.closeFlag.Set(true)   //设置已关闭
+		s.closeFlag.Set(true) //设置已关闭
 
-		close(s.recvChan) 		//关闭接收通道
-		close(s.sendChan) 		//关闭发送通道
-		s.codec.Close()   		//关闭当前连接
+		close(s.recvChan)       //关闭接收通道
+		close(s.sendChan)       //关闭发送通道
+		s.conn.Close()          //关闭当前连接
 		s.invokeCloseCallBack() //发送关闭的回调
-		
+
 		logs.Info("libnet:session already closed session(%d)", s.ID())
 	})
 

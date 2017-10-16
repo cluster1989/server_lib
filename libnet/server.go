@@ -73,8 +73,8 @@ func (server *Server) accept() (*session.Session, error) {
 			}
 			return nil, err
 		}
-		codec := server.protocol.NewCodec(conn)
-		session := session.NewSession(codec, server.Options.ReadTimeOutTimes, server.Options.SendQueueBuf, server.Options.RecvQueueBuf, server.Options.RecvTimeOut, server.Options.SendTimeOut)
+		iConn := server.protocol.NewConn(conn)
+		session := session.NewSession(iConn, server.Options.ReadTimeOutTimes, server.Options.SendQueueBuf, server.Options.RecvQueueBuf, server.Options.RecvTimeOut, server.Options.SendTimeOut)
 		server.clientGroup.Set(session.ID(), session)
 		if server.OnConnect != nil {
 			server.OnConnect(session.ID())

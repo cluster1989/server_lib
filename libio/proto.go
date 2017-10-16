@@ -43,7 +43,7 @@ type protoCodec struct {
 	closer io.Closer
 }
 
-func (j *ProtoCodec) NewCodec(rw io.ReadWriter) def.Codec {
+func (j *ProtoCodec) NewConn(rw io.ReadWriter) def.Conn {
 	codec := &protoCodec{}
 	codec.p = j
 	codec.w = NewWriter(rw)

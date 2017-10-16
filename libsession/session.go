@@ -1,7 +1,10 @@
 package libsession
 
-import "context"
-import "net"
+import (
+	"context"
+	"net"
+	"sync"
+)
 
 // session的配置
 type Options struct {
@@ -12,8 +15,8 @@ type Options struct {
 type Session interface {
 	Get(key interface{}) interface{}
 	Set(key interface{}, val interface{})
-	Delete(key interface{})
-	Clear()
+	Delete(key interface{}) //并非真正删除
+	Clear()                 //这里是真正的清除
 	Options(Options)
 	Save() error
 }
@@ -23,6 +26,7 @@ type session struct {
 	CTX    context.Context
 	Cancel context.CancelFunc
 	conn   net.Conn
+	sync.Mutex
 }
 
 func New() Session {
@@ -32,10 +36,14 @@ func New() Session {
 }
 
 func (s *session) Get(key interface{}) interface{} {
+	s.Lock()
+	defer s.Unlock()
 	return s.CTX.Value(key)
 }
 
 func (s *session) Set(key interface{}, val interface{}) {
+	s.Lock()
+	defer s.Unlock()
 	context.WithValue(s.CTX, key, val)
 }
 

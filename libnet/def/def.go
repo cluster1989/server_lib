@@ -3,16 +3,16 @@ package def
 import "io"
 
 type Protocol interface {
-	NewCodec(rw io.ReadWriter) Codec
+	NewConn(rw io.ReadWriter) Conn
 }
 
-type Codec interface {
+type Conn interface {
 	Receive() ([]byte, error)
 	Send(interface{}) error
 	Close() error
 }
 
 type LibnetMessage struct {
-	MsgID uint16
+	MsgID   uint16
 	Content []byte
 }

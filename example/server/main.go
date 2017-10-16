@@ -4,6 +4,7 @@ import (
 	"flag"
 	"time"
 
+	"github.com/wuqifei/server_lib/libsession"
 	"github.com/wuqifei/server_lib/perf"
 
 	"os"
@@ -47,13 +48,13 @@ func libServer() {
 	options := &libnet.ServerOptions{}
 	options.Network = "tcp"
 	options.Address = ":6868"
-	options.IsLittleIndian = false
-	options.SendQueueBuf = 10
-	options.RecvQueueBuf = 10
+	options.SessionOption = libsession.Options{}
+	options.SessionOption.IsLittleEndian = false
+	options.SessionOption.SendChanSize = 10
+	options.SessionOption.RecvChanSize = 10
 
-	options.SendTimeOut = time.Duration(180) * time.Second
-	options.RecvTimeOut = time.Duration(180) * time.Second //5s 超时间
-	options.ReadTimeOutTimes = 3
+	options.SessionOption.ReadTimeout = time.Duration(180) * time.Second //5s 超时间
+	options.SessionOption.ReadTimeoutTimes = 3
 	options.MaxRecvBufferSize = 8 * 1024
 	options.MaxSendBufferSize = 8 * 1024
 

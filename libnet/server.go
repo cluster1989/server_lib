@@ -9,7 +9,7 @@ import (
 	"github.com/wuqifei/server_lib/concurrent"
 	"github.com/wuqifei/server_lib/libnet/def"
 	"github.com/wuqifei/server_lib/libnet/message"
-	"github.com/wuqifei/server_lib/libnet/session"
+	"github.com/wuqifei/server_lib/libsession"
 	"github.com/wuqifei/server_lib/logs"
 )
 
@@ -42,16 +42,16 @@ func (server *Server) Run() {
 		sess, err := server.accept() //接收客户端连接
 		if err != nil {
 			//record
-			logs.Error("libnet:Client Connect Failed sessionid(%d),error(%v)", sess.ID(), err)
+			logs.Error("libnet:Client Connect Failed sessionid(%v),error(%v)", sess.Get(libsession.SessionIDKey), err)
 			continue
 		}
-		logs.Informational("libnet:receive a client connect sessionid(%d)", sess.ID())
-		sess.AddCloseCallback(server.sessionClosedCallback)
-		sess.AddRecvCallBack(server.serssionRecvDataCallback)
+		logs.Info("libnet:receive a client connect sessionid(%v)", sess.Get(libsession.SessionIDKey))
+		sess.OnClose(server.sessionClosedCallback)
+		sess.OnRecv(server.serssionRecvDataCallback)
 	}
 }
 
-func (server *Server) accept() (*session.Session, error) {
+func (server *Server) accept() (libsession.Session, error) {
 	var delay time.Duration
 	for {
 		conn, err := server.listerer.Accept()
@@ -74,12 +74,13 @@ func (server *Server) accept() (*session.Session, error) {
 			return nil, err
 		}
 		iConn := server.protocol.NewConn(conn)
-		session := session.NewSession(iConn, server.Options.ReadTimeOutTimes, server.Options.SendQueueBuf, server.Options.RecvQueueBuf, server.Options.RecvTimeOut, server.Options.SendTimeOut)
-		server.clientGroup.Set(session.ID(), session)
+		sess := libsession.New(iConn, server.Options.SessionOption)
+		sessID := (sess.Get(libsession.SessionIDKey)).(uint64)
+		server.clientGroup.Set(sessID, sess)
 		if server.OnConnect != nil {
-			server.OnConnect(session.ID())
+			server.OnConnect(sessID)
 		}
-		return session, nil
+		return sess, nil
 	}
 }
 
@@ -90,39 +91,36 @@ func (s *Server) Stop() {
 	s.clientGroup.Dispose()
 }
 
-func (s *Server) sessionClosedCallback(sess *session.Session) {
-	// 删除这个session
-	se := s.clientGroup.Get(sess.ID())
-	if s != nil && se.(*session.Session) == sess {
+func (s *Server) sessionClosedCallback(sess libsession.Session) {
+	sessID := (sess.Get(libsession.SessionIDKey)).(uint64)
 
-		s.clientGroup.Del(sess.ID())
+	se := s.clientGroup.Get(sessID)
+	if se != nil && se.(libsession.Session) == sess {
+
+		s.clientGroup.Del(sessID)
 		if s.OnClose != nil {
-			s.OnClose(sess.ID())
+			s.OnClose(sessID)
 		}
 	}
 
 	if se != nil {
-		logs.Debug("libnet:onclose callback: (%l), se(%l)", sess.ID(), se.(*session.Session).ID())
+		logs.Debug("libnet:onclose callback: sess(%l)", sessID)
 	}
 }
 
-func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *session.Session, err error) {
+func (s *Server) serssionRecvDataCallback(msg *def.LibnetMessage, sess libsession.Session) {
 	defer func() {
 		if r := recover(); r != nil {
-			//这里并不信任逻辑层的输入
+			//这里并不信任逻辑层的注册以及客户端的输入
 			logs.Error("libnet: has recevice a panic(%v)", r)
 		}
 	}()
 
-	if err != nil {
-		//记录处理，不返回
-		logs.Error("libnet:server returned a error msgID(%d),error(%v),sessionId(%d)", msgID, err, sess.ID())
-		return
-	}
-	handler := message.GetHandler(msgID)
+	sessID := (sess.Get(libsession.SessionIDKey)).(uint64)
+	handler := message.GetHandler(msg.MsgID)
 
 	//执行回调方法
-	ackData, ackErr := handler(data.([]byte), sess.ID())
+	ackData, ackErr := handler(msg.Content, sessID)
 	if ackErr != nil {
 		//服务器处理错误
 		logs.Error("libnet:server ackdata handler error (%v)", ackErr)
@@ -132,19 +130,16 @@ func (s *Server) serssionRecvDataCallback(data interface{}, msgID uint16, sess *
 	length := len(ackData)
 	if length != 2 {
 		//服务器错误
-		logs.Error("libnet:server ackdata length error msgID(%d),sessionId(%d)", msgID, sess.ID())
+		logs.Error("libnet:server ackdata length error msgID(%d),sessionId(%d)", msg.MsgID, sessID)
 		return
 	}
 
-	var packet []byte
-	resID := ackData[0].(uint16)
-	resData := ackData[1].([]byte)
-	packet = sess.PackData(resID, resData)
+	resMsg := &def.LibnetMessage{}
 
-	if len(packet) > 0 {
-		//如果有数据 则发送
-		sess.Send(packet)
-	}
+	resMsg.MsgID = ackData[0].(uint16)
+	resMsg.Content = ackData[1].([]byte)
+
+	sess.Send(resMsg)
 }
 
 // 注册路由
@@ -160,20 +155,19 @@ func (s *Server) DisableSession(sessID uint64) error {
 		logs.Error("libnet:DisableSession error(%v)", def.SessionCannotFoundErr)
 		return def.SessionCannotFoundErr
 	}
-	sess := sessInterface.(*session.Session)
+	sess := sessInterface.(libsession.Session)
 	err := sess.Close()
 	return err
 }
 
-// 发送确定的信息，给指定的session用户
-func (s *Server) BroadCastConstMsg(groups []uint64, msg def.LibnetMessage, failed chan<- []uint64) {
+// 发送确定的信息，给指定的一群session用户
+func (s *Server) BroadCastConstMsg(groups []uint64, msg *def.LibnetMessage, failed chan<- []uint64) {
 
 	failedUser := []uint64{}
 
 	for _, id := range groups {
 
 		if err := s.SendMessage2Sess(id, msg); err != nil {
-
 			failedUser = append(failedUser, id)
 		}
 	}
@@ -190,14 +184,13 @@ func (s *Server) Check(sessID uint64) bool {
 	return true
 }
 
-func (s *Server) SendMessage2Sess(sessID uint64, msg def.LibnetMessage) error {
+func (s *Server) SendMessage2Sess(sessID uint64, msg *def.LibnetMessage) error {
 
 	sessInterface := s.clientGroup.Get(sessID)
 	if sessInterface == nil {
 		logs.Error("libnet:DisableSession error(%v)", def.SessionCannotFoundErr)
 		return def.SessionCannotFoundErr
 	}
-	sess := sessInterface.(*session.Session)
-	data := sess.PackData(msg.MsgID, msg.Content)
-	return sess.Send(data)
+	sess := sessInterface.(libsession.Session)
+	return sess.Send(msg)
 }

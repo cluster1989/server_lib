@@ -2,9 +2,9 @@ package libnet
 
 import (
 	"net"
-	"time"
 
 	"github.com/wuqifei/server_lib/libio"
+	"github.com/wuqifei/server_lib/libsession"
 	"github.com/wuqifei/server_lib/logs"
 )
 
@@ -15,19 +15,7 @@ type ServerOptions struct {
 	// 地址
 	Address string
 
-	// cpu大小头设置
-	IsLittleIndian bool
-
-	// 接收和发送的队列大小
-	SendQueueBuf int
-	RecvQueueBuf int
-
-	//接收和发送的超时时间
-	SendTimeOut time.Duration
-	RecvTimeOut time.Duration
-
-	// 允许超时次数
-	ReadTimeOutTimes int
+	SessionOption libsession.Options
 
 	// 最大的接收字节数
 	MaxRecvBufferSize int
@@ -41,7 +29,7 @@ func Serve(options *ServerOptions) *Server {
 	if err != nil {
 		panic(err)
 	}
-	proto := libio.New(options.IsLittleIndian, options.MaxRecvBufferSize, options.MaxSendBufferSize)
+	proto := libio.New(options.SessionOption.IsLittleEndian, options.MaxRecvBufferSize, options.MaxSendBufferSize)
 	server := NewServer(listener, proto)
 	server.Options = options
 	logs.Informational("libnet:Server Start")

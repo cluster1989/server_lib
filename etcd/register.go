@@ -8,10 +8,6 @@ import (
 	"github.com/wuqifei/server_lib/logs"
 )
 
-// 注册的etcd 服务
-type EtcdService struct {
-}
-
 var (
 	stopSignal = make(chan bool, 1)
 )

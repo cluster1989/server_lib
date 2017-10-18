@@ -30,24 +30,24 @@ func NewServer(l net.Listener, p def.Protocol) *Server {
 	}
 }
 
-func (server *Server) Listener() net.Listener {
-	return server.listerer
+func (s *Server) Listener() net.Listener {
+	return s.listerer
 }
 
 // 启动并且监听端口
-func (server *Server) Run() {
+func (s *Server) Run() {
 	logs.Informational("libnet:Start to listen")
 
 	for {
-		sess, err := server.accept() //接收客户端连接
+		sess, err := s.accept() //接收客户端连接
 		if err != nil {
 			//record
 			logs.Error("libnet:Client Connect Failed sessionid(%v),error(%v)", sess.Get(libsession.SessionIDKey), err)
 			continue
 		}
 		logs.Info("libnet:receive a client connect sessionid(%v)", sess.Get(libsession.SessionIDKey))
-		sess.OnClose(server.sessionClosedCallback)
-		sess.OnRecv(server.serssionRecvDataCallback)
+		sess.OnClose(s.sessionClosedCallback)
+		sess.OnRecv(s.serssionRecvDataCallback)
 	}
 }
 

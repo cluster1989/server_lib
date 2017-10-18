@@ -131,6 +131,7 @@ func (s *session) chanLoop() {
 			s.timeoutTimes.Set(0)
 
 		case msg := <-s.sendChan:
+
 			if s.isClose() {
 				logs.Debug("session: send chan loop hasclosed id(%d)", s.id)
 				runtime.Goexit()
@@ -171,6 +172,7 @@ func (s *session) recvLoop() {
 			continue
 		}
 
+		//写在这里的原因是不希望代码再往下走
 		if s.isClose() {
 			logs.Debug("session: recvloop hasclosed id(%d)", s.id)
 			runtime.Goexit()

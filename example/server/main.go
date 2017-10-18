@@ -4,7 +4,7 @@ import (
 	"flag"
 	"time"
 
-	"github.com/wuqifei/server_lib/libsession"
+	"github.com/wuqifei/server_lib/libnet/libsession"
 	"github.com/wuqifei/server_lib/perf"
 
 	"os"

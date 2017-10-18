@@ -8,8 +8,8 @@ import (
 
 	"github.com/wuqifei/server_lib/concurrent"
 	"github.com/wuqifei/server_lib/libnet/def"
+	"github.com/wuqifei/server_lib/libnet/libsession"
 	"github.com/wuqifei/server_lib/libnet/message"
-	"github.com/wuqifei/server_lib/libsession"
 	"github.com/wuqifei/server_lib/logs"
 )
 

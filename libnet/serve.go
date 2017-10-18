@@ -4,7 +4,7 @@ import (
 	"net"
 
 	"github.com/wuqifei/server_lib/libio"
-	"github.com/wuqifei/server_lib/libsession"
+	"github.com/wuqifei/server_lib/libnet/libsession"
 	"github.com/wuqifei/server_lib/logs"
 )
 

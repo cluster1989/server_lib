@@ -127,6 +127,11 @@ func (s *Server) serssionRecvDataCallback(msg *def.LibnetMessage, sess libsessio
 		return
 	}
 
+	// 空值直接返回
+	if ackData == nil {
+		return
+	}
+
 	length := len(ackData)
 	if length != 2 {
 		//服务器错误

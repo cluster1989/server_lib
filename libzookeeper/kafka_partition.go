@@ -68,7 +68,7 @@ func (p *Partition) UsesPreferedReplica() (bool, error) {
 func (p *Partition) State() (*KafkaPartitionStateModel, error) {
 	state := &KafkaPartitionStateModel{}
 
-	node := fmt.Sprintf("%s/brokers/topics/%s/partitions/%d/state", p.topic.zookeeper.option.chroot, p.topic.Name, p.ID)
+	node := fmt.Sprintf("%s/brokers/topics/%s/partitions/%d/state", p.topic.zookeeper.option.Chroot, p.topic.Name, p.ID)
 
 	value, _, err := p.topic.zookeeper.conn.Get(node)
 	if err != nil {

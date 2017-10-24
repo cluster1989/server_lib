@@ -11,21 +11,28 @@ import (
 type Option struct {
 	// zk的连接超时时间
 	Timeout time.Duration
-	// zkserver的地址，例如:localhost:2381,localhost:2382/test
-	// 包括了topic和地址
-	Server string
+
+	// zkserver的地址，例如:localhost:2381
+	Addrs []string
+
+	// zk的跟目录
+	Chroot string
 
 	//zookper的输出日志
 	Logger zk.Logger
-
-	addrs  []string
-	chroot string
 }
 
 // zookeeper实例
 type ZooKeeper struct {
 	conn   *zk.Conn
 	option *Option
+}
+
+func NewConfig() *Option {
+	return &Option{
+		Timeout: time.Duration(1) * time.Second,
+		Logger:  zk.DefaultLogger,
+	}
 }
 
 // 生成一个zk
@@ -35,10 +42,7 @@ func NewZK(option *Option) (*ZooKeeper, error) {
 	}
 
 	var err error
-	addrs, chroot := ParseZKAddrString(option.Server)
 	zookeeper := &ZooKeeper{}
-	option.addrs = addrs
-	option.chroot = chroot
 
 	zookeeper.option = option
 
@@ -47,11 +51,11 @@ func NewZK(option *Option) (*ZooKeeper, error) {
 		logOption := func(c *zk.Conn) {
 			c.SetLogger(option.Logger)
 		}
-		if zookeeper.conn, _, err = zk.Connect(addrs, option.Timeout, logOption); err == nil {
+		if zookeeper.conn, _, err = zk.Connect(option.Addrs, option.Timeout, logOption); err == nil {
 			return zookeeper, nil
 		}
 	} else {
-		if zookeeper.conn, _, err = zk.Connect(addrs, option.Timeout); err == nil {
+		if zookeeper.conn, _, err = zk.Connect(option.Addrs, option.Timeout); err == nil {
 			return zookeeper, nil
 		}
 	}
@@ -70,7 +74,7 @@ func (z *ZooKeeper) Nodes(node string) (map[string]string, error) {
 	if node[0] != '/' {
 		node = "/" + node
 	}
-	root := fmt.Sprintf("%s%s", z.option.chroot, node)
+	root := fmt.Sprintf("%s%s", z.option.Chroot, node)
 	children, _, err := z.conn.Children(root)
 	if err != nil {
 		return nil, err
@@ -95,7 +99,7 @@ func (z *ZooKeeper) Exists(node string) (ok bool, err error) {
 	if node[0] != '/' {
 		node = "/" + node
 	}
-	root := fmt.Sprintf("%s%s", z.option.chroot, node)
+	root := fmt.Sprintf("%s%s", z.option.Chroot, node)
 	ok, _, err = z.conn.Exists(root)
 	return
 }
@@ -106,7 +110,7 @@ func (z *ZooKeeper) DeleteRecursive(node string) (err error) {
 		node = "/" + node
 	}
 
-	root := fmt.Sprintf("%s%s", z.option.chroot, node)
+	root := fmt.Sprintf("%s%s", z.option.Chroot, node)
 	return z.deleteRecursive(root)
 }
 
@@ -132,7 +136,7 @@ func (z *ZooKeeper) MkdirRecursive(node string) (err error) {
 		node = "/" + node
 	}
 
-	root := fmt.Sprintf("%s%s", z.option.chroot, node)
+	root := fmt.Sprintf("%s%s", z.option.Chroot, node)
 	return z.mkdirRecursive(root)
 }
 func (z *ZooKeeper) mkdirRecursive(node string) (err error) {
@@ -155,7 +159,7 @@ func (z *ZooKeeper) Create(node string, value []byte, ephemeral bool) (err error
 		node = "/" + node
 	}
 
-	root := fmt.Sprintf("%s%s", z.option.chroot, node)
+	root := fmt.Sprintf("%s%s", z.option.Chroot, node)
 	if err = z.mkdirRecursive(path.Dir(root)); err != nil {
 		return
 	}

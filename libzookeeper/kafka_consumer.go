@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/samuel/go-zookeeper/zk"
+	"github.com/wuqifei/server_lib/logs"
 )
 
 var (
@@ -63,7 +64,7 @@ func (z *ZooKeeper) NewConsumerGroup(name string) *ConsumerGroup {
 
 // 得到所有的注册的consumergroups
 func (z *ZooKeeper) ConsumerGroups() (ConsumerGroupList, error) {
-	root := fmt.Sprintf("%s/consumers", z.option.chroot)
+	root := fmt.Sprintf("%s/consumers", z.option.Chroot)
 	children, _, err := z.conn.Children(root)
 	if err != nil {
 		return nil, err
@@ -100,7 +101,7 @@ func (cg *ConsumerGroup) Delete() error {
 
 func (cg *ConsumerGroup) Instances() (ConsumerGroupInstanceList, error) {
 	node := fmt.Sprintf("/consumers/%s/ids", cg.Name)
-	root := fmt.Sprintf("%s%s", cg.zookeeper.option.chroot, node)
+	root := fmt.Sprintf("%s%s", cg.zookeeper.option.Chroot, node)
 	//得到consumerid
 	if flag, err := cg.zookeeper.Exists(node); err != nil {
 		return nil, err
@@ -110,7 +111,7 @@ func (cg *ConsumerGroup) Instances() (ConsumerGroupInstanceList, error) {
 			return nil, err
 		}
 
-		result := make(ConsumerGroupInstanceList, len(children))
+		result := make(ConsumerGroupInstanceList, 0)
 
 		for _, child := range children {
 			instance := cg.Instance(child)
@@ -125,7 +126,7 @@ func (cg *ConsumerGroup) Instances() (ConsumerGroupInstanceList, error) {
 
 func (cg *ConsumerGroup) WatchInstances() (ConsumerGroupInstanceList, <-chan zk.Event, error) {
 	node := fmt.Sprintf("/consumers/%s/ids", cg.Name)
-	root := fmt.Sprintf("%s%s", cg.zookeeper.option.chroot, node)
+	root := fmt.Sprintf("%s%s", cg.zookeeper.option.Chroot, node)
 	//得到consumerid
 	if flag, err := cg.zookeeper.Exists(node); err != nil {
 		return nil, nil, err
@@ -140,9 +141,10 @@ func (cg *ConsumerGroup) WatchInstances() (ConsumerGroupInstanceList, <-chan zk.
 		return nil, nil, err
 	}
 
-	result := make(ConsumerGroupInstanceList, len(children))
+	result := make(ConsumerGroupInstanceList, 0)
 
 	for _, child := range children {
+		logs.Debug("registerd instance ID:%s len[%d]", child, len(children))
 		instance := cg.Instance(child)
 		result = append(result, instance)
 	}
@@ -166,7 +168,7 @@ func (cg *ConsumerGroup) NewInstance() *ConsumerGroupInstance {
 
 // 返回这个partition的拥有者
 func (cg *ConsumerGroup) PartitionOwner(topic string, partition int32) (*ConsumerGroupInstance, error) {
-	root := fmt.Sprintf("%s/consumers/%s/owners/%s/%d", cg.zookeeper.option.chroot, cg.Name, topic, partition)
+	root := fmt.Sprintf("%s/consumers/%s/owners/%s/%d", cg.zookeeper.option.Chroot, cg.Name, topic, partition)
 	val, _, err := cg.zookeeper.conn.Get(root)
 	if err != nil {
 		if err == zk.ErrNoNode {
@@ -179,7 +181,7 @@ func (cg *ConsumerGroup) PartitionOwner(topic string, partition int32) (*Consume
 }
 
 func (cg *ConsumerGroup) WatchPartitionOwner(topic string, partition int32) (*ConsumerGroupInstance, <-chan zk.Event, error) {
-	root := fmt.Sprintf("%s/consumers/%s/owners/%s/%d", cg.zookeeper.option.chroot, cg.Name, topic, partition)
+	root := fmt.Sprintf("%s/consumers/%s/owners/%s/%d", cg.zookeeper.option.Chroot, cg.Name, topic, partition)
 	val, _, c, err := cg.zookeeper.conn.GetW(root)
 	if err != nil {
 		if err == zk.ErrNoNode {
@@ -199,7 +201,7 @@ func (cgi *ConsumerGroupInstance) IsRegistered() (bool, error) {
 
 // 返回consumer实例的注册的信息
 func (cgi *ConsumerGroupInstance) RegisterdMsg() (*KafkaConsumerRegistryModel, error) {
-	root := fmt.Sprintf("%s/consumers/%s/ids/%s", cgi.cg.zookeeper.option.chroot, cgi.cg.Name, cgi.ID)
+	root := fmt.Sprintf("%s/consumers/%s/ids/%s", cgi.cg.zookeeper.option.Chroot, cgi.cg.Name, cgi.ID)
 	val, _, err := cgi.cg.zookeeper.conn.Get(root)
 	if err != nil {
 		return nil, err
@@ -246,7 +248,7 @@ func (cgi *ConsumerGroupInstance) Register(topics []string) error {
 // 取消这个实例在zk里面的注册
 func (cgi *ConsumerGroupInstance) Deregister() error {
 	node := fmt.Sprintf("/consumers/%s/ids/%s", cgi.cg.Name, cgi.ID)
-	root := fmt.Sprintf("%s%s", cgi.cg.zookeeper.option.chroot, node)
+	root := fmt.Sprintf("%s%s", cgi.cg.zookeeper.option.Chroot, node)
 	flag, stat, err := cgi.cg.zookeeper.conn.Exists(node)
 	if err != nil {
 		return err
@@ -265,7 +267,7 @@ func (cgi *ConsumerGroupInstance) ClaimPartition(topic string, partition int32) 
 
 	// 给这个partition创建一个临时节点
 	node = fmt.Sprintf("%s/%d", node, partition)
-	root := fmt.Sprintf("%s%s", cgi.cg.zookeeper.option.chroot, node)
+	root := fmt.Sprintf("%s%s", cgi.cg.zookeeper.option.Chroot, node)
 	err := cgi.cg.zookeeper.Create(node, []byte(cgi.ID), true)
 	if err != nil {
 		if err == zk.ErrNodeExists {
@@ -299,7 +301,7 @@ func (cgi *ConsumerGroupInstance) ReleasePartition(topic string, partition int32
 
 // 这个consumer拥有的topic
 func (cg *ConsumerGroup) Topics() (TopicList, error) {
-	root := fmt.Sprintf("%s/consumers/%s/owners", cg.zookeeper.option.chroot, cg.Name)
+	root := fmt.Sprintf("%s/consumers/%s/owners", cg.zookeeper.option.Chroot, cg.Name)
 	children, _, err := cg.zookeeper.conn.Children(root)
 	if err != nil {
 		return nil, err
@@ -315,7 +317,7 @@ func (cg *ConsumerGroup) Topics() (TopicList, error) {
 // 提交给这个group/topic/partition 一个偏移量
 func (cg *ConsumerGroup) CommitOffset(topic string, partition int32, offset int64) error {
 	node := fmt.Sprintf("/consumers/%s/offsets/%s/%d", cg.Name, topic, partition)
-	root := fmt.Sprintf("%s%s", cg.zookeeper.option.chroot, node)
+	root := fmt.Sprintf("%s%s", cg.zookeeper.option.Chroot, node)
 	data := []byte(fmt.Sprintf("%d", offset))
 	_, stat, err := cg.zookeeper.conn.Get(root)
 	if err != nil {
@@ -330,7 +332,7 @@ func (cg *ConsumerGroup) CommitOffset(topic string, partition int32, offset int6
 
 func (cg *ConsumerGroup) FetchOffset(topic string, partition int32) (int64, error) {
 	node := fmt.Sprintf("/consumers/%s/offsets/%s/%d", cg.Name, topic, partition)
-	root := fmt.Sprintf("%s%s", cg.zookeeper.option.chroot, node)
+	root := fmt.Sprintf("%s%s", cg.zookeeper.option.Chroot, node)
 
 	val, _, err := cg.zookeeper.conn.Get(root)
 	if err == zk.ErrNoNode {
@@ -345,7 +347,7 @@ func (cg *ConsumerGroup) FetchOffset(topic string, partition int32) (int64, erro
 func (cg *ConsumerGroup) FetchAllOffsets() (map[string]map[int32]int64, error) {
 	result := make(map[string]map[int32]int64)
 
-	offsetsRoot := fmt.Sprintf("%s/consumers/%s/offsets", cg.zookeeper.option.chroot, cg.Name)
+	offsetsRoot := fmt.Sprintf("%s/consumers/%s/offsets", cg.zookeeper.option.Chroot, cg.Name)
 	topics, _, err := cg.zookeeper.conn.Children(offsetsRoot)
 	if err == zk.ErrNoNode {
 		return result, nil
@@ -355,14 +357,14 @@ func (cg *ConsumerGroup) FetchAllOffsets() (map[string]map[int32]int64, error) {
 
 	for _, topic := range topics {
 		result[topic] = make(map[int32]int64)
-		topicRoot := fmt.Sprintf("%s/consumers/%s/offsets/%s", cg.zookeeper.option.chroot, cg.Name, topic)
+		topicRoot := fmt.Sprintf("%s/consumers/%s/offsets/%s", cg.zookeeper.option.Chroot, cg.Name, topic)
 		partitions, _, err := cg.zookeeper.conn.Children(topicRoot)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, partition := range partitions {
-			partitionRoot := fmt.Sprintf("%s/consumers/%s/offsets/%s/%s", cg.zookeeper.option.chroot, cg.Name, topic, partition)
+			partitionRoot := fmt.Sprintf("%s/consumers/%s/offsets/%s/%s", cg.zookeeper.option.Chroot, cg.Name, topic, partition)
 			val, _, err := cg.zookeeper.conn.Get(partitionRoot)
 			if err != nil {
 				return nil, err
@@ -386,7 +388,7 @@ func (cg *ConsumerGroup) FetchAllOffsets() (map[string]map[int32]int64, error) {
 }
 
 func (cg *ConsumerGroup) ResetOffsets() error {
-	offsetsRoot := fmt.Sprintf("%s/consumers/%s/offsets", cg.zookeeper.option.chroot, cg.Name)
+	offsetsRoot := fmt.Sprintf("%s/consumers/%s/offsets", cg.zookeeper.option.Chroot, cg.Name)
 	topics, _, err := cg.zookeeper.conn.Children(offsetsRoot)
 	if err == zk.ErrNoNode {
 		return nil
@@ -395,14 +397,14 @@ func (cg *ConsumerGroup) ResetOffsets() error {
 	}
 
 	for _, topic := range topics {
-		topicRoot := fmt.Sprintf("%s/consumers/%s/offsets/%s", cg.zookeeper.option.chroot, cg.Name, topic)
+		topicRoot := fmt.Sprintf("%s/consumers/%s/offsets/%s", cg.zookeeper.option.Chroot, cg.Name, topic)
 		partitions, stat, err := cg.zookeeper.conn.Children(topicRoot)
 		if err != nil {
 			return err
 		}
 
 		for _, partition := range partitions {
-			partitionRoot := fmt.Sprintf("%s/consumers/%s/offsets/%s/%s", cg.zookeeper.option.chroot, cg.Name, topic, partition)
+			partitionRoot := fmt.Sprintf("%s/consumers/%s/offsets/%s/%s", cg.zookeeper.option.Chroot, cg.Name, topic, partition)
 			exists, stat, err := cg.zookeeper.conn.Exists(partitionRoot)
 			if exists {
 				if err = cg.zookeeper.conn.Delete(partitionRoot, stat.Version); err != nil {

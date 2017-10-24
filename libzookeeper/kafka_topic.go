@@ -20,9 +20,15 @@ func (t *Topic) Exists() (bool, error) {
 	return b, e
 }
 
+// 创建一个topic
+func (t *Topic) Create() error {
+	node := fmt.Sprintf("/brokers/topics/%s", t.Name)
+	return t.zookeeper.MkdirRecursive(node)
+}
+
 // 得到topic下所有partition
 func (t *Topic) Partitions() (PartitionList, error) {
-	node := fmt.Sprintf("%s/brokers/topics/%s", t.zookeeper.option.chroot, t.Name)
+	node := fmt.Sprintf("%s/brokers/topics/%s", t.zookeeper.option.Chroot, t.Name)
 	value, _, err := t.zookeeper.conn.Get(node)
 	if err != nil {
 		return nil, err
@@ -33,7 +39,7 @@ func (t *Topic) Partitions() (PartitionList, error) {
 
 // 得到topic下所有partition，并监控
 func (t *Topic) WatchPartitions() (PartitionList, <-chan zk.Event, error) {
-	node := fmt.Sprintf("%s/brokers/topics/%s", t.zookeeper.option.chroot, t.Name)
+	node := fmt.Sprintf("%s/brokers/topics/%s", t.zookeeper.option.Chroot, t.Name)
 	value, _, c, err := t.zookeeper.conn.GetW(node)
 	if err != nil {
 		return nil, nil, err
@@ -76,7 +82,7 @@ func (t *Topic) NewPartition(id int32, replicas []int32) *Partition {
 //  返回topic等级的配置
 func (t *Topic) Config() (map[string]string, error) {
 
-	node := fmt.Sprintf("%s/config/topics/%s", t.zookeeper.option.chroot, t.Name)
+	node := fmt.Sprintf("%s/config/topics/%s", t.zookeeper.option.Chroot, t.Name)
 	value, _, err := t.zookeeper.conn.Get(node)
 	if err != nil {
 		return nil, err

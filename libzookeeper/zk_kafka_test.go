@@ -9,12 +9,12 @@ import (
 )
 
 var (
-	zkServers = "127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183"
+	zkServers = []string{"127.0.0.1:2181", "127.0.0.1:2182", "127.0.0.1:2183"}
 )
 
 func TestBrokers(t *testing.T) {
 	option := &libzookeeper.Option{}
-	option.Server = zkServers
+	option.Addrs = zkServers
 	option.Timeout = time.Duration(2) * time.Second
 	zk, err := libzookeeper.NewZK(option)
 	if err != nil {
@@ -41,7 +41,7 @@ func TestBrokers(t *testing.T) {
 
 func TestBrokerList(t *testing.T) {
 	option := &libzookeeper.Option{}
-	option.Server = zkServers
+	option.Addrs = zkServers
 	option.Timeout = time.Duration(2) * time.Second
 	zk, err := libzookeeper.NewZK(option)
 	if err != nil {
@@ -70,7 +70,7 @@ func TestBrokerList(t *testing.T) {
 func TestConsumergroups(t *testing.T) {
 
 	option := &libzookeeper.Option{}
-	option.Server = zkServers
+	option.Addrs = zkServers
 	option.Timeout = time.Duration(2) * time.Second
 	zkk, err := libzookeeper.NewZK(option)
 	if err != nil {

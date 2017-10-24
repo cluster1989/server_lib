@@ -11,7 +11,7 @@ import (
 
 // 返回所有的kafka的所有broker
 func (z *ZooKeeper) KafkaBrokers() (map[int32]string, error) {
-	root := fmt.Sprintf("%s/brokers/ids", z.option.chroot)
+	root := fmt.Sprintf("%s/brokers/ids", z.option.Chroot)
 	children, _, err := z.conn.Children(root)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (z *ZooKeeper) KafkaBrokerList() ([]string, error) {
 
 // 如果kafka的控制器已经选举出来，会直接返回控制器的brokerid
 func (z *ZooKeeper) KafkaController() (int32, error) {
-	node := fmt.Sprintf("%s/controller", z.option.chroot)
+	node := fmt.Sprintf("%s/controller", z.option.Chroot)
 	data, _, err := z.conn.Get(node)
 	if err != nil {
 		return -1, err
@@ -72,7 +72,7 @@ func (z *ZooKeeper) NewKafkaTopic(topic string) *Topic {
 
 // 得到所有kafka注册的topic的名称
 func (z *ZooKeeper) KafkaTopics() (TopicList, error) {
-	root := fmt.Sprintf("%s/brokers/topics", z.option.chroot)
+	root := fmt.Sprintf("%s/brokers/topics", z.option.Chroot)
 
 	children, _, err := z.conn.Children(root)
 	if err != nil {
@@ -88,7 +88,7 @@ func (z *ZooKeeper) KafkaTopics() (TopicList, error) {
 
 // 返回kafka的topic，并且监听改变
 func (z *ZooKeeper) WatchKafkaTopics() (TopicList, <-chan zk.Event, error) {
-	root := fmt.Sprintf("%s/brokers/topics", z.option.chroot)
+	root := fmt.Sprintf("%s/brokers/topics", z.option.Chroot)
 	children, _, c, err := z.conn.ChildrenW(root)
 	if err != nil {
 		return nil, nil, err

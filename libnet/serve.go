@@ -2,6 +2,7 @@ package libnet
 
 import (
 	"net"
+	"time"
 
 	"github.com/wuqifei/server_lib/libio"
 	"github.com/wuqifei/server_lib/libnet/libsession"
@@ -22,6 +23,19 @@ type ServerOptions struct {
 
 	// 最大的发送字节数
 	MaxSendBufferSize int
+}
+
+func NewConf() *ServerOptions {
+	options := &ServerOptions{}
+	options.Network = "tcp"
+	options.MaxRecvBufferSize = 8 * 1024
+	options.MaxSendBufferSize = 8 * 1024
+	options.SessionOption.IsLittleEndian = false
+	options.SessionOption.ReadTimeout = time.Duration(60) * time.Second
+	options.SessionOption.ReadTimeoutTimes = 3
+	options.SessionOption.RecvChanSize = 3
+	options.SessionOption.SendChanSize = 3
+	return options
 }
 
 func Serve(options *ServerOptions) *Server {

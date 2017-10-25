@@ -26,6 +26,12 @@ type Server struct {
 	serverOptions *ServerOptions
 }
 
+func NewConf() *ServerOptions {
+
+	options := &ServerOptions{}
+	return options
+}
+
 func NewServer(options *ServerOptions) *Server {
 	s := &Server{}
 	s.serverOptions = options

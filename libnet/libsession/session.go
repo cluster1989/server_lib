@@ -26,8 +26,6 @@ var globalSessionId *concurrent.AtomicUint64
 
 // session的配置
 type Options struct {
-	//这个session，最大的存在时间，秒
-	MaxAge      int
 	ReadTimeout time.Duration //读取的超时
 
 	// 允许的超时次数

@@ -1,7 +1,10 @@
 package libgrpc
 
-import "google.golang.org/grpc"
-import "google.golang.org/grpc/credentials"
+import (
+	"github.com/wuqifei/server_lib/logs"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+)
 
 type ClientOptions struct {
 	Address string
@@ -41,6 +44,7 @@ func NewClient(options *ClientOptions) *Client {
 		panic(err)
 	}
 	c.ClientConn = conn
+	logs.Info("rpc connect:[%s]", options.Address)
 	return c
 
 }

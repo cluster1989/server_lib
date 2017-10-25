@@ -26,6 +26,12 @@ var (
 	authClient clientv3.Auth
 )
 
+func NewOption() *Options {
+	option := &Options{}
+	option.DialTimeout = time.Duration(10) * time.Second
+	return option
+}
+
 /**
  * 生成etcd 实例，在一个实例服务器中，有且只有一个etcd client实例
  */

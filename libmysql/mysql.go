@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/wuqifei/server_lib/logs"
 )
 
 var (
@@ -26,7 +27,7 @@ type Callback func() error
 func Init(option *Options) error {
 	var err error
 	sqlStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", option.User, option.Pwd, option.Host, option.DB)
-
+	logs.Debug("mysql :connect [%s]", sqlStr)
 	MySql, err = sql.Open("mysql", sqlStr)
 	if err != nil {
 		return err

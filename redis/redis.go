@@ -42,7 +42,7 @@ func NewConf() *Options {
 	return o
 }
 
-func NewRedisPool(options *Options) *RedisPool {
+func NewCache(options *Options) *RedisPool {
 	r := new(RedisPool)
 	r.options = options
 	r.initRedis()

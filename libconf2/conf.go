@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/wuqifei/server_lib/logs"
 )
 
 // 定义不变的类型
@@ -472,10 +470,6 @@ func (c *Config) Unmarshal(v interface{}) error {
 		case reflect.Struct:
 			{
 				newV := reflect.New(tf.Type)
-				if newV.Kind() == reflect.Ptr {
-					logs.Info("newV is ptr")
-				}
-				logs.Error("newV.Kind[%v]tag[%s]", newV.Kind(), tag)
 				if err := c.unmarshalItem(newV, tag); err != nil {
 					return err
 				}

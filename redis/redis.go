@@ -30,9 +30,21 @@ type RedisPool struct {
 	redis.Pool
 }
 
-func NewRedisPool(options Options) *RedisPool {
+func NewConf() *Options {
+	o := &Options{
+		MaxIdle:            8,
+		MaxActive:          64,
+		IdleTimeout:        300,
+		DialConnectTimeout: 30,
+		DialReadTimeout:    30,
+		DialWriteTimeout:   30,
+	}
+	return o
+}
+
+func NewRedisPool(options *Options) *RedisPool {
 	r := new(RedisPool)
-	r.options = &options
+	r.options = options
 	r.initRedis()
 	conn := r.Get() //显初始化一个conn，在redispool中
 	defer conn.Close()

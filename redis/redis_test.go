@@ -21,7 +21,7 @@ var redisCfg = Options{
 }
 
 func Test_set(t *testing.T) {
-	cache := NewRedisPool(redisCfg)
+	cache := NewRedisPool(&redisCfg)
 	time.Sleep(3)
 	if err := cache.Setex("name777", "nick", time.Duration(30)*time.Second); err != nil {
 		t.Error(err)
@@ -43,7 +43,7 @@ func Test_set(t *testing.T) {
 }
 
 func Test_Hsetget(t *testing.T) {
-	cache := NewRedisPool(redisCfg)
+	cache := NewRedisPool(&redisCfg)
 	if err := cache.Hset("name", "nick", "wuqifei"); err != nil {
 		t.Error(err)
 	}
@@ -59,7 +59,7 @@ func printRedisVal(val interface{}) {
 }
 
 func Test_Multi(t *testing.T) {
-	cache := NewRedisPool(redisCfg)
+	cache := NewRedisPool(&redisCfg)
 	cache.Set("name881", "broto1")
 	cache.Set("name882", "broto2")
 	cache.Set("name883", "broto3")
@@ -75,7 +75,7 @@ func Test_Multi(t *testing.T) {
 
 func Test_Trans(t *testing.T) {
 
-	cache := NewRedisPool(redisCfg)
+	cache := NewRedisPool(&redisCfg)
 	_, err := cache.Transaction(func() (r []*RedisTransactionRet, errCode int) {
 		ret := []*RedisTransactionRet{}
 

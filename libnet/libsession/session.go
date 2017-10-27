@@ -157,7 +157,7 @@ func (s *session) recvLoop() {
 	for {
 		data, err := s.conn.Receive()
 
-		logs.Debug("session: recv session message message(%#v) session(%d)", data, s.id)
+		logs.Debug("session: recv session message len[%d] message(%v) session(%d)", len(data), data, s.id)
 		if err != nil {
 			//记录错误
 
@@ -292,6 +292,6 @@ func (s *session) parse(data interface{}) (msg *def.LibnetMessage, err error) {
 	} else {
 		msg.MsgID = libio.GetUint16BE(cmdByte)
 	}
-	msg.Content = cmdByte[2:]
+	msg.Content = bData[2:]
 	return
 }

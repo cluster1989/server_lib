@@ -4,27 +4,33 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/wuqifei/chat/common/rpc_model"
 	"github.com/wuqifei/server_lib/libgrpc"
-	"github.com/wuqifei/server_lib/libgrpc/test/pb"
-	"github.com/wuqifei/server_lib/signal"
+	"github.com/wuqifei/server_lib/logs"
 	"google.golang.org/grpc/grpclog"
 )
 
 func main() {
 
 	options := &libgrpc.ClientOptions{}
-	options.Address = "127.0.0.1:9999"
+	options.Address = "127.0.0.1:8124"
 	client := libgrpc.NewClient(options)
 	// 初始化客户端
-	c := pb.NewHelloClient(client.ClientConn)
 
-	// 调用方法
-	req := &pb.HelloRequest{Name: "gRPC"}
-	res, err := c.SayHello(context.Background(), req)
+	in := &rpc_model.LogicServerModel_ReqRegister{}
+	in.Addr = "127.0.0.1:8123"
+	in.Password = "123456789"
+	in.UserName = "wqfwqf"
+
+	l := rpc_model.NewLogicServerRPCClient(client.ClientConn)
+	res, err := l.Register(context.Background(), in)
+
+	// res, err := c.SayHello(context.Background(), req)
 
 	if err != nil {
 		grpclog.Fatalln(err)
 	}
-	fmt.Println(res.Message)
-	signal.InitSignal()
+	fmt.Println(res.Uid)
+	state := client.ClientConn.GetState()
+	logs.Debug("rpc status:%s", state.String())
 }

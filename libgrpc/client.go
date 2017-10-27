@@ -44,7 +44,9 @@ func NewClient(options *ClientOptions) *Client {
 		panic(err)
 	}
 	c.ClientConn = conn
-	logs.Info("rpc connect:[%s]", options.Address)
+
+	state := conn.GetState()
+	logs.Info("rpc connect:[%s] status[%s]", options.Address, state.String())
 	return c
 
 }

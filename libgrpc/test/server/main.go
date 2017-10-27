@@ -28,6 +28,6 @@ func main() {
 	options.Address = "127.0.0.1:9999"
 	server := libgrpc.NewServer(options)
 	pb.RegisterHelloServer(server.Server, HelloService)
-	server.RPCServe()
+	go server.RPCServe()
 	signal.InitSignal()
 }

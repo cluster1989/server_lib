@@ -2,7 +2,6 @@ package etcd
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/wuqifei/server_lib/logs"
@@ -21,7 +20,7 @@ type EtcdWatchCallback func(action string, key, val []byte)
  */
 func Watcher(serviceKey string, callback EtcdWatchCallback) {
 	watchChan := etcdClient.Watch(context.Background(), serviceKey, clientv3.WithPrefix())
-	fmt.Printf("start watch: %s\n", serviceKey)
+	logs.Debug("start watch: %s\n", serviceKey)
 	for wresp := range watchChan {
 		for _, ev := range wresp.Events {
 			logs.Debug("etcd: watch[%s],ev[%q]", serviceKey, ev)

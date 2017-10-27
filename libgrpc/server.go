@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 
+	"github.com/wuqifei/server_lib/logs"
 	"google.golang.org/grpc/credentials"
 
 	"google.golang.org/grpc"
@@ -67,8 +68,10 @@ func NewServer(options *ServerOptions) *Server {
 func (s *Server) RPCServe() error {
 
 	listen, err := net.Listen("tcp", s.serverOptions.Address)
+
 	if err != nil {
 		panic(err)
 	}
+	logs.Info("rpc serve address:", s.serverOptions.Address)
 	return s.Serve(listen)
 }

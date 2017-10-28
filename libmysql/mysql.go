@@ -2,16 +2,20 @@ package libmysql
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/wuqifei/server_lib/logs"
 )
 
-var (
-	MySql *sql.DB
-)
+// var (
+// 	MySql *sql.DB
+// )
+
+type Mysql struct {
+	db     *sql.DB
+	option *Options
+}
 
 type Options struct {
 	User         string
@@ -24,41 +28,50 @@ type Options struct {
 
 type Callback func() error
 
-func Init(option *Options) error {
-	var err error
+// 初始化配置文件
+func NewConf() *Options {
+	option := &Options{}
+	option.MaxIdleConns = 4
+	option.MaxOpenConns = 16
+	return option
+}
+
+// 初始化mysql
+func NewMysql(option *Options) *Mysql {
 	sqlStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", option.User, option.Pwd, option.Host, option.DB)
 	logs.Debug("mysql :connect [%s]", sqlStr)
-	MySql, err = sql.Open("mysql", sqlStr)
+	db, err := sql.Open("mysql", sqlStr)
 	if err != nil {
-		return err
+		panic(err)
 	}
-	err = MySql.Ping()
+	err = db.Ping()
 	if err != nil {
-		return err
+		panic(err)
 	}
-	MySql.SetMaxIdleConns(option.MaxIdleConns)
-	MySql.SetMaxOpenConns(option.MaxOpenConns)
-	return err
+	db.SetMaxIdleConns(option.MaxIdleConns)
+	db.SetMaxOpenConns(option.MaxOpenConns)
+
+	msql := &Mysql{}
+	msql.option = option
+	msql.db = db
+	return msql
 }
 
-func Close() error {
-	if MySql == nil {
-		return nil
-	}
+func (m *Mysql) Close() error {
 
-	return MySql.Close()
+	return m.db.Close()
 }
 
-func Get() *sql.DB {
-	return MySql
+func (m *Mysql) Get() *sql.DB {
+	return m.db
 }
 
-func execute(sqlStr string, args ...interface{}) (sql.Result, error) {
-	return Get().Exec(sqlStr, args...)
+func (m *Mysql) execute(sqlStr string, args ...interface{}) (sql.Result, error) {
+	return m.db.Exec(sqlStr, args...)
 }
 
-func Query(queryStr string, args ...interface{}) (map[int]map[string]string, error) {
-	query, err := Get().Query(queryStr, args...)
+func (m *Mysql) Query(queryStr string, args ...interface{}) (map[int]map[string]string, error) {
+	query, err := m.db.Query(queryStr, args...)
 	defer query.Close()
 	results := make(map[int]map[string]string)
 	if err != nil {
@@ -90,8 +103,8 @@ func Query(queryStr string, args ...interface{}) (map[int]map[string]string, err
 	return results, nil
 }
 
-func Update(sqlStr string, args ...interface{}) (int64, error) {
-	result, err := execute(sqlStr, args...)
+func (m *Mysql) Update(sqlStr string, args ...interface{}) (int64, error) {
+	result, err := m.execute(sqlStr, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -99,8 +112,8 @@ func Update(sqlStr string, args ...interface{}) (int64, error) {
 	return affect, err
 }
 
-func Insert(insertStr string, args ...interface{}) (int64, error) {
-	result, err := execute(insertStr, args...)
+func (m *Mysql) Insert(insertStr string, args ...interface{}) (int64, error) {
+	result, err := m.execute(insertStr, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -110,101 +123,8 @@ func Insert(insertStr string, args ...interface{}) (int64, error) {
 }
 
 // 删除
-func Delete(deleteStr string, args ...interface{}) (int64, error) {
-	result, err := execute(deleteStr, args...)
-	if err != nil {
-		return 0, err
-	}
-	affect, err := result.RowsAffected()
-	return affect, err
-}
-
-/***********************************事务操作***********************************/
-
-type MysqlTransaction struct {
-	SqlTx *sql.Tx
-}
-
-func (t *MysqlTransaction) execute(sqlStr string, args ...interface{}) (sql.Result, error) {
-	return t.SqlTx.Exec(sqlStr, args...)
-}
-
-func Begin() (*MysqlTransaction, error) {
-	var (
-		trans = &MysqlTransaction{}
-		err   error
-	)
-	sql := Get()
-	if sql == nil {
-		panic(errors.New("not initialized mysql"))
-	}
-	if err = sql.Ping(); err == nil {
-		trans.SqlTx, err = sql.Begin()
-	}
-	return trans, err
-}
-
-func (t *MysqlTransaction) RollBack() error {
-	return t.SqlTx.Rollback()
-}
-
-func (t *MysqlTransaction) Commit() error {
-	return t.SqlTx.Commit()
-}
-
-func (t *MysqlTransaction) Query(queryStr string, args ...interface{}) (map[int]map[string]string, error) {
-	query, err := t.SqlTx.Query(queryStr, args...)
-	results := make(map[int]map[string]string)
-	if err != nil {
-		return results, err
-	}
-	defer query.Close()
-	cols, _ := query.Columns()
-	values := make([][]byte, len(cols))
-	scans := make([]interface{}, len(cols))
-	for i := range values {
-		scans[i] = &values[i]
-	}
-	i := 0
-	for query.Next() {
-		if err := query.Scan(scans...); err != nil {
-			return results, err
-		}
-		row := make(map[string]string)
-		for k, v := range values {
-			key := cols[k]
-			row[key] = string(v)
-		}
-		results[i] = row
-		i++
-	}
-	return results, nil
-}
-
-// 更新
-func (t *MysqlTransaction) Update(updateStr string, args ...interface{}) (int64, error) {
-	result, err := t.execute(updateStr, args...)
-	if err != nil {
-		return 0, err
-	}
-	affect, err := result.RowsAffected()
-	return affect, err
-}
-
-// 插入
-func (t *MysqlTransaction) Insert(insertStr string, args ...interface{}) (int64, error) {
-	result, err := t.execute(insertStr, args...)
-	if err != nil {
-		return 0, err
-	}
-	lastid, err := result.LastInsertId()
-	return lastid, err
-
-}
-
-// 删除
-func (t *MysqlTransaction) Delete(deleteStr string, args ...interface{}) (int64, error) {
-	result, err := t.execute(deleteStr, args...)
+func (m *Mysql) Delete(deleteStr string, args ...interface{}) (int64, error) {
+	result, err := m.execute(deleteStr, args...)
 	if err != nil {
 		return 0, err
 	}

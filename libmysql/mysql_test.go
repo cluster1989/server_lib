@@ -6,10 +6,10 @@ import (
 )
 
 var (
-	createSQL = "CREATE TABLE `userinfo` ( `id` INT(10) NOT NULL AUTO_INCREMENT,  `name` VARCHAR(64) NULL DEFAULT NULL, `created` DATE NULL DEFAULT NULL, PRIMARY KEY (`id`));"
+	createSQL = "CREATE TABLE `user` ( `id` INT(10) NOT NULL AUTO_INCREMENT,  `name` VARCHAR(64) NULL DEFAULT NULL, `created` DATE NULL DEFAULT NULL, PRIMARY KEY (`id`));"
 	option    = &Options{
 		User:         "root",
-		Pwd:          "mysql",
+		Pwd:          "12345678",
 		Host:         "127.0.0.1:3306",
 		DB:           "datest",
 		MaxOpenConns: 16,
@@ -17,39 +17,26 @@ var (
 	}
 )
 
-// func TestCreate(t *testing.T) {
-
-// 	if err := Init(option); err != nil {
-// 		t.Fatal(err)
-// 	}
-// 	ret, err := execute(createSQL)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	t.Log("ret:", ret)
-// }
-
 func TestTrans(t *testing.T) {
-	if err := Init(option); err != nil {
-		t.Fatal(err)
-	}
 
-	// id, err := Insert("insert userinfo set name = 'xx'")
+	msql := NewMysql(option)
+
+	// id, err := msql.Insert("insert user set tel = 'xx',pwd = '123456'")
 	// if err != nil {
 	// 	t.Fatal(err)
 	// }
 	// t.Log("id:", id)
 
-	// Insert("insert userinfo set name = 'xxx'")
-	// Insert("insert userinfo set name = 'xxxx'")
-	// Insert("insert userinfo set name = 'xxxxx'")
-	// Insert("insert userinfo set name = 'xxxxxx'")
+	// msql.Insert("insert user set tel = 'xxx'，pwd = '123456'")
+	// msql.Insert("insert user set tel = 'xxxx',pwd = '123456'")
+	// msql.Insert("insert user set tel = 'xxxxx',pwd = '123456'")
+	// msql.Insert("insert user set tel = 'xxxxxx',pwd = '123456'")
 
-	trans, e := Begin()
+	trans, e := msql.Begin()
 	if e != nil {
 		t.Fatal(e)
 	}
-	ret, e := trans.Query("select * from userinfo where name = 'xx'")
+	ret, e := trans.Query("select * from user where tel = 'xx'")
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -60,6 +47,6 @@ func TestTrans(t *testing.T) {
 		}
 	}
 
-	trans.Insert("insert userinfo set name = 'xxxxxxxxxxxx'")
+	trans.Insert("insert user set tel = 'xxxxxxxxxxxx'")
 	trans.Commit()
 }

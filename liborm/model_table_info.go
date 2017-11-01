@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/wuqifei/server_lib/logs"
+
 	"github.com/wuqifei/server_lib/libio"
 	"github.com/wuqifei/server_lib/libmodel"
 )
@@ -14,6 +16,26 @@ const (
 	defaultStructTagName = "orm"
 )
 
+// 用来跟db通信的model
+type ModelTableInsertInfo struct {
+	Key     []string
+	Value   []interface{}
+	CanNull []bool
+	Type    []OrmFieldType
+}
+
+type ModelTableUpdateInfo struct {
+	// 更新的字段
+	Updates []*ModelTableFieldConditionInfo
+	// 条件的字段
+	Conditions []*ModelTableFieldConditionInfo
+}
+
+type ModelTableFieldConditionInfo struct {
+	Key string
+	Val interface{}
+}
+
 type ModelTableInfo struct {
 	Name       string
 	Table      string
@@ -21,11 +43,13 @@ type ModelTableInfo struct {
 	reflectVal reflect.Value
 
 	// 所有字段
-	Fields []*ModelTableFieldInfo
+	Fields    []*ModelTableFieldInfo
+	MapFields map[string]*ModelTableFieldInfo
 
-	// 是否已经定义了主键，没定义就给他生成一个
-	HasPrimeKey bool
-	Tags        []string
+	HasPrimeKey         bool
+	PrimeTableFieldName string
+	PrimeFieldName      string
+	Tags                []string
 }
 
 func (m *ModelTableInfo) ToString() string {
@@ -54,6 +78,7 @@ type ModelTableFieldInfo struct {
 	Tags map[string]string
 
 	IsPrimary bool
+	IsAutoKey bool
 	CanNull   bool
 	ItemSize  uint32
 }
@@ -79,6 +104,7 @@ func newModelTableInfo(tablename string, reflectVal reflect.Value, tags []string
 	info.Name = reflectType.Name()
 	info.Fullname = libmodel.GetObjFullName(reflectType)
 	info.Fields = make([]*ModelTableFieldInfo, 0)
+	info.MapFields = make(map[string]*ModelTableFieldInfo)
 	info.Table = tablename
 	info.Tags = tags
 	addModelTableField(info, trueReflectVal)
@@ -100,8 +126,11 @@ func addModelTableField(info *ModelTableInfo, reflectValue reflect.Value) {
 		fieldInfo := newModelField(field, fieldStruct)
 		if fieldInfo != nil {
 			info.Fields = append(info.Fields, fieldInfo)
+			info.MapFields[fieldInfo.Name] = fieldInfo
 			if fieldInfo.IsPrimary {
 				info.HasPrimeKey = true
+				info.PrimeFieldName = fieldInfo.Name
+				info.PrimeTableFieldName = fieldInfo.TableFieldName
 			}
 		}
 
@@ -135,7 +164,7 @@ func newModelField(reflectValue reflect.Value, fieldStruct reflect.StructField) 
 			if len(vArr) != 1 && len(vArr) != 2 {
 				panic(fmt.Errorf("tag should follow the request:[%s] full:[%s]", v, tag))
 			}
-			key = vArr[0]
+			key = strings.ToUpper(vArr[0])
 			if len(vArr) == 1 {
 
 				tagArr[key] = ""
@@ -145,6 +174,10 @@ func newModelField(reflectValue reflect.Value, fieldStruct reflect.StructField) 
 			}
 			if strings.Contains(key, "PRIMARY") {
 				fieldInfo.IsPrimary = true
+			}
+
+			if strings.Contains(key, "AUTO_INCREMENT") {
+				fieldInfo.IsAutoKey = true
 			}
 		}
 	}
@@ -287,4 +320,230 @@ func (info *ModelTableFieldInfo) getNullableType() *ModelTableFieldInfo {
 	}
 
 	return info
+}
+
+func insertKeyValues(model *ModelTableInfo, reflectVal reflect.Value) *ModelTableInsertInfo {
+
+	canNullArr := make([]bool, 0)
+	keyArr := make([]string, 0)
+	valueArr := make([]interface{}, 0)
+	typeArr := make([]OrmFieldType, 0)
+
+	info := &ModelTableInsertInfo{}
+	for _, field := range model.Fields {
+		if field.IsAutoKey {
+			continue
+		}
+		indField := reflectVal.FieldByName(field.Name)
+		valueArr = append(valueArr, indField.Interface())
+		canNullArr = append(canNullArr, field.CanNull)
+		keyArr = append(keyArr, field.TableFieldName)
+		typeArr = append(typeArr, field.TableFieldType)
+	}
+	info.Key = keyArr
+	info.CanNull = canNullArr
+	info.Type = typeArr
+	info.Value = valueArr
+	return info
+}
+
+// vals[0]表示修改的字段 比如 a = 5000,b = 10000等等，逗号分割
+// vals[1]表示修改的条件，如上
+// 如果不传的话，默认用model的主键进行更新，如果vals没有传递的话，默认全部更新
+func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) *ModelTableUpdateInfo {
+	conditions := make([]*ModelTableFieldConditionInfo, 0)
+	updates := make([]*ModelTableFieldConditionInfo, 0)
+	if len(val) == 0 {
+		if !model.HasPrimeKey {
+			panic(fmt.Errorf("update model did not have a prime key [%s]", model.Fullname))
+		}
+
+		condition := &ModelTableFieldConditionInfo{}
+		condition.Key = model.PrimeTableFieldName
+		indField := reflectVal.FieldByName(model.PrimeFieldName)
+		condition.Val = indField.Interface()
+		conditions = append(conditions, condition)
+
+		for _, field := range model.Fields {
+			update := &ModelTableFieldConditionInfo{}
+			update.Key = field.TableFieldName
+			indField := reflectVal.FieldByName(field.Name)
+			update.Val = indField.Interface()
+			updates = append(updates, update)
+		}
+	} else {
+
+		updateArr := val[0]
+		for _, update := range updateArr {
+
+			field, ok := model.MapFields[update.Key]
+			if !ok {
+				printStr := fmt.Sprintf("update model did not have a right update [%s] val[%s]", model.Fullname, update.Key)
+				panic(fmt.Errorf("%s", printStr))
+			}
+
+			update.Key = field.TableFieldName
+			updates = append(updates, update)
+		}
+
+		if len(val) < 2 {
+			if !model.HasPrimeKey {
+				panic(fmt.Errorf("update model did not have a prime key [%s]", model.Fullname))
+			}
+
+			condition := &ModelTableFieldConditionInfo{}
+			condition.Key = model.PrimeTableFieldName
+			indField := reflectVal.FieldByName(model.PrimeFieldName)
+			condition.Val = indField.Interface()
+			conditions = append(conditions, condition)
+		} else {
+			conditionArr := val[0]
+			for _, condition := range conditionArr {
+
+				field, ok := model.MapFields[condition.Key]
+				if !ok {
+					printStr := fmt.Sprintf("update model did not have a right condition [%s] val[%s]", model.Fullname, condition.Key)
+					panic(fmt.Errorf("%s", printStr))
+				}
+
+				condition.Key = field.TableFieldName
+				conditions = append(conditions, condition)
+			}
+		}
+	}
+
+	info := &ModelTableUpdateInfo{}
+	info.Updates = updates
+	info.Conditions = conditions
+	return info
+}
+
+func changeTypeValue(val string, valType OrmFieldType) interface{} {
+	strConv := libio.NewConvert(val)
+	switch valType {
+	case OrmTypeBoolField:
+		{
+			v, e := strConv.Bool()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeIntField:
+		{
+			v, e := strConv.Int()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeInt8Field:
+		{
+			v, e := strConv.Int8()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeInt16Field:
+		{
+			v, e := strConv.Int16()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeInt32Field:
+		{
+			v, e := strConv.Int32()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeInt64Field:
+		{
+			v, e := strConv.Int64()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeUIntField:
+		{
+			v, e := strConv.Uint()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeUInt8Field:
+		{
+			v, e := strConv.Uint8()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeUInt16Field:
+		{
+			v, e := strConv.Uint16()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeUInt32Field:
+		{
+			v, e := strConv.Uint32()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeUInt64Field:
+		{
+			v, e := strConv.Uint64()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeFloat32Field:
+		{
+			v, e := strConv.Float32()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeFloat64Field:
+		{
+			v, e := strConv.Float64()
+			if e != nil {
+				return nil
+			}
+			return v
+		}
+	case OrmTypeStringField:
+		{
+			return strConv.String()
+		}
+	case OrmTypeArrayField:
+		{
+			return strings.Split(strConv.String(), ",")
+		}
+	case OrmTypeMapField:
+		{
+			logs.Info("try map as key to search ? it is not right:[%s]", strConv.String())
+			return nil
+		}
+
+	case OrmTypeStructField:
+		{
+			logs.Info("try struct as key to search ? it is not right:[%s]", strConv.String())
+			return nil
+		}
+	}
+	return nil
 }

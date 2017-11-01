@@ -23,6 +23,9 @@ type SQL interface {
 	// 注册数据库表
 	RegistNewTable(models []*ModelTableInfo) error
 
+	InsertValue(tablename string, model *ModelTableInsertInfo) (int64, error)
+	UpdateValue(tablename string, model *ModelTableUpdateInfo) error
+
 	// 关闭数据库
 	Close() error
 }

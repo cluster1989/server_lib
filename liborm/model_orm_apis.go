@@ -33,8 +33,26 @@ func (orm *Orm) registerModel(tablename string, model interface{}, tags []string
 
 	m := newModelTableInfo(tablename, reflectVal, tags)
 
-	orm.modelCache.Set(tablename, m)
+	orm.modelCache.Set(m.Name, m)
 
 	logs.Debug("orm: succeed registed:[%s]", m.ToString())
 
+}
+
+func (orm *Orm) getModelInfoAndIndtype(model interface{}) (*ModelTableInfo, reflect.Value) {
+	val := reflect.ValueOf(model)
+	ind := reflect.Indirect(val)
+
+	if ind.Type().Kind() == reflect.Ptr {
+		panic("orm : model not support ** model")
+	}
+
+	name := ind.Type().Name()
+
+	m := orm.modelCache.Get(name)
+	if m == nil {
+		panic(fmt.Errorf("model has called a invalid name :[%s]", name))
+	}
+
+	return m.(*ModelTableInfo), ind
 }

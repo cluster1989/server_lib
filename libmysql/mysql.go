@@ -8,10 +8,6 @@ import (
 	"github.com/wuqifei/server_lib/logs"
 )
 
-// var (
-// 	MySql *sql.DB
-// )
-
 type Mysql struct {
 	db     *sql.DB
 	option *Options

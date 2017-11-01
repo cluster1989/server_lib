@@ -7,10 +7,29 @@ import (
 
 type MysqlTransaction struct {
 	SqlTx *sql.Tx
+	db    *sql.DB
 }
 
 func (t *MysqlTransaction) execute(sqlStr string, args ...interface{}) (sql.Result, error) {
 	return t.SqlTx.Exec(sqlStr, args...)
+}
+
+// 开启一个事务操作
+func (m *Mysql) NewTransaction() *MysqlTransaction {
+	trans := &MysqlTransaction{}
+	trans.db = m.Get()
+	return trans
+}
+
+func (m *MysqlTransaction) Begin() error {
+	if m.db == nil {
+		panic(errors.New("not initialized mysql"))
+	}
+	var err error
+	if err = m.db.Ping(); err == nil {
+		m.SqlTx, err = m.db.Begin()
+	}
+	return err
 }
 
 func (m *Mysql) Begin() (*MysqlTransaction, error) {

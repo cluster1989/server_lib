@@ -66,7 +66,7 @@ func (m *Mysql) Get() *sql.DB {
 	return m.db
 }
 
-func (m *Mysql) execute(sqlStr string, args ...interface{}) (sql.Result, error) {
+func (m *Mysql) Excute(sqlStr string, args ...interface{}) (sql.Result, error) {
 	return m.db.Exec(sqlStr, args...)
 }
 
@@ -104,7 +104,7 @@ func (m *Mysql) Query(queryStr string, args ...interface{}) (map[int]map[string]
 }
 
 func (m *Mysql) Update(sqlStr string, args ...interface{}) (int64, error) {
-	result, err := m.execute(sqlStr, args...)
+	result, err := m.Excute(sqlStr, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -113,7 +113,7 @@ func (m *Mysql) Update(sqlStr string, args ...interface{}) (int64, error) {
 }
 
 func (m *Mysql) Insert(insertStr string, args ...interface{}) (int64, error) {
-	result, err := m.execute(insertStr, args...)
+	result, err := m.Excute(insertStr, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -124,7 +124,7 @@ func (m *Mysql) Insert(insertStr string, args ...interface{}) (int64, error) {
 
 // 删除
 func (m *Mysql) Delete(deleteStr string, args ...interface{}) (int64, error) {
-	result, err := m.execute(deleteStr, args...)
+	result, err := m.Excute(deleteStr, args...)
 	if err != nil {
 		return 0, err
 	}

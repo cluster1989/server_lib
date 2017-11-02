@@ -25,7 +25,7 @@ type SQL interface {
 
 	InsertValue(tablename string, model *ModelTableInsertInfo) (int64, error)
 	UpdateValue(tablename string, model *ModelTableUpdateInfo) error
-
+	DeleteValue(tablename string, arr []*ModelTableFieldConditionInfo) (int64, error)
 	// 关闭数据库
 	Close() error
 }

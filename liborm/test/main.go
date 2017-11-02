@@ -49,6 +49,7 @@ func main() {
 	user.AKNIO = "qqqqq"
 	user.UUIB = 10
 	user.Tibick = 1235
-	// orm.Insert(user)
+	orm.Insert(user)
 	orm.Update(user)
+	orm.Delete(user)
 }

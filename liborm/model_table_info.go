@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/wuqifei/server_lib/logs"
-
 	"github.com/wuqifei/server_lib/libio"
 	"github.com/wuqifei/server_lib/libmodel"
 )
@@ -418,132 +416,31 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 	return info
 }
 
-func changeTypeValue(val string, valType OrmFieldType) interface{} {
-	strConv := libio.NewConvert(val)
-	switch valType {
-	case OrmTypeBoolField:
-		{
-			v, e := strConv.Bool()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeIntField:
-		{
-			v, e := strConv.Int()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeInt8Field:
-		{
-			v, e := strConv.Int8()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeInt16Field:
-		{
-			v, e := strConv.Int16()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeInt32Field:
-		{
-			v, e := strConv.Int32()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeInt64Field:
-		{
-			v, e := strConv.Int64()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeUIntField:
-		{
-			v, e := strConv.Uint()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeUInt8Field:
-		{
-			v, e := strConv.Uint8()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeUInt16Field:
-		{
-			v, e := strConv.Uint16()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeUInt32Field:
-		{
-			v, e := strConv.Uint32()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeUInt64Field:
-		{
-			v, e := strConv.Uint64()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeFloat32Field:
-		{
-			v, e := strConv.Float32()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeFloat64Field:
-		{
-			v, e := strConv.Float64()
-			if e != nil {
-				return nil
-			}
-			return v
-		}
-	case OrmTypeStringField:
-		{
-			return strConv.String()
-		}
-	case OrmTypeArrayField:
-		{
-			return strings.Split(strConv.String(), ",")
-		}
-	case OrmTypeMapField:
-		{
-			logs.Info("try map as key to search ? it is not right:[%s]", strConv.String())
-			return nil
+func deleteKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) []*ModelTableFieldConditionInfo {
+	conditions := make([]*ModelTableFieldConditionInfo, 0)
+	if len(val) == 0 {
+		if !model.HasPrimeKey {
+			panic(fmt.Errorf("update model did not have a prime key [%s]", model.Fullname))
 		}
 
-	case OrmTypeStructField:
-		{
-			logs.Info("try struct as key to search ? it is not right:[%s]", strConv.String())
-			return nil
+		condition := &ModelTableFieldConditionInfo{}
+		condition.Key = model.PrimeTableFieldName
+		indField := reflectVal.FieldByName(model.PrimeFieldName)
+		condition.Val = indField.Interface()
+		conditions = append(conditions, condition)
+	} else {
+		conditionArr := val[0]
+		for _, condition := range conditionArr {
+
+			field, ok := model.MapFields[condition.Key]
+			if !ok {
+				printStr := fmt.Sprintf("update model did not have a right condition [%s] val[%s]", model.Fullname, condition.Key)
+				panic(fmt.Errorf("%s", printStr))
+			}
+
+			condition.Key = field.TableFieldName
+			conditions = append(conditions, condition)
 		}
 	}
-	return nil
+	return conditions
 }

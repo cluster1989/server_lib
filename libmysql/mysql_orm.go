@@ -167,7 +167,7 @@ func (mysql *Mysql) InsertValue(tablename string, model *liborm.ModelTableInsert
 	logs.Debug("mysql:insert table sql:[%s]", sql)
 	i, e := mysql.Insert(sql)
 	if e != nil {
-		logs.Error("mysql:insert table sql:[%s] err[%v]", sql, e)
+		logs.Error("mysql:orm insert table sql:[%s] err[%v]", sql, e)
 	}
 	return i, e
 }
@@ -212,6 +212,32 @@ func (mysql *Mysql) UpdateValue(tablename string, model *liborm.ModelTableUpdate
 	}
 	return e
 }
+
+func (mysql *Mysql) DeleteValue(tablename string, arr []*liborm.ModelTableFieldConditionInfo) (int64, error) {
+	sql := fmt.Sprintf("DELETE FROM `%s` WHERE", tablename)
+
+	if len(arr) == 0 {
+		return 0, fmt.Errorf("DeleteValue condition is null:[%s]", tablename)
+	}
+
+	length := len(arr)
+	for i := 0; i < length; i++ {
+		condition := arr[i]
+		if i < length-1 {
+			sql += fmt.Sprintf("%s,", setUpdateValue(condition))
+		} else {
+			sql += fmt.Sprintf("%s", setUpdateValue(condition))
+		}
+	}
+	sql += ";"
+	logs.Info("mysql:orm delete sql [%s]", sql)
+	i, e := mysql.Delete(sql)
+	if e != nil {
+		logs.Error("mysql:orm delete sql [%s] error[%v]", sql, e)
+	}
+	return i, e
+}
+
 func setUpdateValue(model *liborm.ModelTableFieldConditionInfo) string {
 
 	switch reflect.TypeOf(model.Val).Kind() {

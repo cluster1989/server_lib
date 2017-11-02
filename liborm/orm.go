@@ -65,3 +65,10 @@ func (orm *Orm) Update(md interface{}, vals ...[]*ModelTableFieldConditionInfo) 
 
 	return orm.db.UpdateValue(mi.Table, val)
 }
+
+// 删除表字段,如果没有传入val 则默认删除主键
+func (orm *Orm) Delete(md interface{}, val ...[]*ModelTableFieldConditionInfo) (int64, error) {
+	mi, ind := orm.getModelInfoAndIndtype(md)
+	v := deleteKeyValues(mi, ind, val...)
+	return orm.db.DeleteValue(mi.Table, v)
+}

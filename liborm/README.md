@@ -4,6 +4,7 @@ golang的orm 框架
 
 于是拆分数据库部分以及orm部分
 
+V1.0
 支持：
 数据库表的创建，以及单表的增删改查的任何操作，支持事务操作
 目前数据库支持mysql，在libmysql中实现了，SQL以及 Transaction的接口

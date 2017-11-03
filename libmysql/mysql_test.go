@@ -32,7 +32,7 @@ func TestTrans(t *testing.T) {
 	// msql.Insert("insert user set tel = 'xxxxx',pwd = '123456'")
 	// msql.Insert("insert user set tel = 'xxxxxx',pwd = '123456'")
 
-	trans, e := msql.Begin()
+	trans, e := msql.NewLocalransaction()
 	if e != nil {
 		t.Fatal(e)
 	}

@@ -16,15 +16,16 @@ type User struct {
 }
 
 // 继承于FF118
-type UserInfoBBQ8 struct {
-	User
-	Pads    string `orm:"size:150|name:txt_b"`
+type USER8999 struct {
 	IBD     uint64 `orm:"name:id|null:false|AUTO_INCREMENT|UNIQUE|PRIMARY KEY"`
+	Pads    string `orm:"size:150|name:txt_b"`
 	KLaos   string `orm:"null:true"`
 	AKNIO   string
 	Bkaskl  string
 	Bkaskl2 string
 	Bkaskl3 string
+
+	User
 }
 
 var (
@@ -40,28 +41,47 @@ var (
 
 func main() {
 	orm := liborm.NewOrm()
-	orm.RegisterModelWithTableName("", &UserInfoBBQ8{}, []string{"ENGINE=InnoDB", "CHARSET=utf8"})
+	orm.RegisterModelWithTableName("", &USER8999{}, []string{"ENGINE=InnoDB", "CHARSET=utf8"})
 	mysql := libmysql.NewMysql(option)
 	orm.RegisterDB(mysql)
 	orm.BootInDB()
 
-	// user := &UserInfoBBQ8{}
-	// user.Pads = "1234132"
-	// user.IBD = 1
-	// user.KLaos = "555555"
-	// user.AKNIO = "22222"
-	// user.UUIB = 10
-	// user.Tibick = 123516162
-	// orm.Insert(user)
+	user := &USER8999{}
+	user.Pads = "wwwww"
+	user.IBD = 123414123
+	user.KLaos = "wwwww"
+	user.AKNIO = "swww"
+	user.UUIB = 123411
+	user.Tibick = 889
+	// id, _ := orm.Insert(user)
+	// logs.Info("id:[%d]", id)
 	// orm.Update(user)
 	// orm.Delete(user)
 
-	user2 := &UserInfoBBQ8{}
+	// user2 := &UserInfoBBQ8{}
 
-	vals, e := orm.Select(user2)
-	if e != nil {
-		logs.Debug("err------[%v]", e)
-	}
+	// vals, e := orm.Select(user2)
+	// if e != nil {
+	// 	logs.Debug("err------[%v]", e)
+	// }
+	// b, _ := json.Marshal(vals)
+	// logs.Debug("------%s", string(b))
+
+	t := orm.NewTransaction()
+	t.Begin()
+	id, _ := t.Insert(user)
+	user.IBD = uint64(id)
+	user.KLaos = "qqqqqq"
+	user.Tibick = 575757
+	t.Update(user)
+	vals, _ := t.Select(user)
+
 	b, _ := json.Marshal(vals)
-	logs.Debug("------%s", string(b))
+	logs.Debug("---1---%s", string(b))
+	t.Commit()
+
+	vals, _ = orm.Select(user)
+
+	b, _ = json.Marshal(vals)
+	logs.Debug("---2---%s", string(b))
 }

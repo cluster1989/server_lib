@@ -50,8 +50,7 @@ func (orm *Orm) BootInDB() error {
 func (orm *Orm) Insert(md interface{}) (int64, error) {
 	mi, ind := orm.getModelInfoAndIndtype(md)
 	val := insertKeyValues(mi, ind)
-	orm.db.InsertValue(mi.Table, val)
-	return 0, nil
+	return orm.db.InsertValue(mi.Table, val)
 }
 
 // 更新表

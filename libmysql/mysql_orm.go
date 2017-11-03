@@ -10,6 +10,10 @@ import (
 	"github.com/wuqifei/server_lib/liborm"
 )
 
+func (mysql *Mysql) NewTransaction() liborm.Transaction {
+	return mysql.NewLocalransaction()
+}
+
 //创建表
 func (mysql *Mysql) RegistNewTable(models []*liborm.ModelTableInfo) error {
 	var err error
@@ -96,190 +100,45 @@ func createTableSQL(model *liborm.ModelTableInfo) string {
 	return sql
 }
 
-// 这里是一个优化细节,可以优化，也可以不优化，取决于采取的解决方案
 func (mysql *Mysql) InsertValue(tablename string, model *liborm.ModelTableInsertInfo) (int64, error) {
-	sql := fmt.Sprintf("INSERT INTO `%s` (\n", tablename)
-
-	length := len(model.Key)
-	for i := 0; i < length; i++ {
-		v := model.Key[i]
-		if i < length-1 {
-			sql += fmt.Sprintf("`%s`,", v)
-		} else {
-			sql += fmt.Sprintf("`%s`", v)
-		}
+	sqlInter := createInsertSQL(tablename, model)
+	if sqlInter == nil {
+		return 0, fmt.Errorf("Insert sql create error:[%s]", tablename)
 	}
-	sql += ") VALUES ("
-
-	for i := 0; i < length; i++ {
-		v := model.Value[i]
-		ormType := model.Type[i]
-		filedType := Orm2MysqlType(ormType)
-		if filedType == TypeVarcharField {
-			switch ormType {
-			case liborm.OrmTypeBoolField:
-				{
-					boolVal := 0
-					if v.(bool) {
-						boolVal = 1
-					}
-					if i < length-1 {
-						sql += fmt.Sprintf("%v,", boolVal)
-					} else {
-						sql += fmt.Sprintf("%v", boolVal)
-					}
-				}
-			case liborm.OrmTypeStructField, liborm.OrmTypeArrayField, liborm.OrmTypeMapField:
-				{
-					b, e := json.Marshal(v)
-					if e != nil {
-						return 0, e
-					}
-					if i < length-1 {
-						sql += fmt.Sprintf("\"%s\",", string(b))
-					} else {
-						sql += fmt.Sprintf("\"%s\"", string(b))
-					}
-					continue
-				}
-			case liborm.OrmTypeStringField:
-				{
-					if i < length-1 {
-						sql += fmt.Sprintf("\"%s\",", v)
-					} else {
-						sql += fmt.Sprintf("\"%s\"", v)
-					}
-					continue
-				}
-			}
-		}
-
-		if i < length-1 {
-			sql += fmt.Sprintf("%v,", v)
-		} else {
-			sql += fmt.Sprintf("%v", v)
-		}
-	}
-	sql += ")"
-
-	sql += ";"
-
-	logs.Debug("mysql:insert table sql:[%s]", sql)
-	i, e := mysql.Insert(sql)
+	i, e := mysql.Insert(sqlInter.(string))
 	if e != nil {
-		logs.Error("mysql:orm insert table sql:[%s] err[%v]", sql, e)
+		logs.Error("mysql:orm insert table sql:[%s] err[%v]", sqlInter.(string), e)
 	}
 	return i, e
 }
 
 func (mysql *Mysql) UpdateValue(tablename string, model *liborm.ModelTableUpdateInfo) error {
-	sql := fmt.Sprintf("UPDATE `%s` SET ", tablename)
-
-	if len(model.Conditions) == 0 {
-		return fmt.Errorf("update condition is null:[%s]", tablename)
+	sqlInter := createUpdateSQL(tablename, model)
+	if sqlInter == nil {
+		return fmt.Errorf("update sql create error:[%s]", tablename)
 	}
-
-	if len(model.Updates) > 0 {
-		length := len(model.Updates)
-		for i := 0; i < length; i++ {
-			update := model.Updates[i]
-			if i < length-1 {
-				sql += fmt.Sprintf("%s,", setUpdateValue(update))
-			} else {
-				sql += fmt.Sprintf("%s", setUpdateValue(update))
-			}
-		}
-	}
-
-	sql += " WHERE "
-
-	if len(model.Conditions) > 0 {
-		length := len(model.Conditions)
-		for i := 0; i < length; i++ {
-			condition := model.Conditions[i]
-			if i < length-1 {
-				sql += fmt.Sprintf("%s,", setUpdateValue(condition))
-			} else {
-				sql += fmt.Sprintf("%s", setUpdateValue(condition))
-			}
-		}
-	}
-	sql += ";"
-	logs.Info("mysql:orm update sql [%s]", sql)
-	_, e := mysql.Update(sql)
+	_, e := mysql.Update(sqlInter.(string))
 	if e != nil {
-		logs.Error("mysql:orm update sql [%s] error[%v]", sql, e)
+		logs.Error("mysql:orm update sql [%s] error[%v]", sqlInter.(string), e)
 	}
 	return e
 }
 
 func (mysql *Mysql) DeleteValue(tablename string, arr []*liborm.ModelTableFieldConditionInfo) (int64, error) {
-	sql := fmt.Sprintf("DELETE FROM `%s` WHERE", tablename)
-
-	if len(arr) == 0 {
-		return 0, fmt.Errorf("DeleteValue condition is null:[%s]", tablename)
+	sqlInter := createDeleteSQL(tablename, arr)
+	if sqlInter == nil {
+		return 0, fmt.Errorf("delete sql create error:[%s]", tablename)
 	}
-
-	length := len(arr)
-	for i := 0; i < length; i++ {
-		condition := arr[i]
-		if i < length-1 {
-			sql += fmt.Sprintf("%s,", setUpdateValue(condition))
-		} else {
-			sql += fmt.Sprintf("%s", setUpdateValue(condition))
-		}
-	}
-	sql += ";"
-	logs.Info("mysql:orm delete sql [%s]", sql)
-	i, e := mysql.Delete(sql)
+	i, e := mysql.Delete(sqlInter.(string))
 	if e != nil {
-		logs.Error("mysql:orm delete sql [%s] error[%v]", sql, e)
+		logs.Error("mysql:orm delete sql [%s] error[%v]", sqlInter.(string), e)
 	}
 	return i, e
 }
 
 func (mysql *Mysql) SelectValue(tablename string, searchCondition, whereCondition, sqlCondition []*liborm.ModelTableFieldConditionInfo) (map[int]map[string]string, error) {
 
-	sql := fmt.Sprintf("SELECT ")
-	if searchCondition != nil && len(searchCondition) > 0 {
-		length := len(searchCondition)
-		for i := 0; i < length; i++ {
-			model := searchCondition[i]
-			if i < length-1 {
-				sql += fmt.Sprintf("%s ,", model.Key)
-			} else {
-				sql += fmt.Sprintf("%s ", model.Key)
-			}
-		}
-	} else {
-		sql += "* "
-	}
-
-	sql += fmt.Sprintf("FROM %s ", tablename)
-
-	if whereCondition != nil && len(whereCondition) > 0 {
-		length := len(whereCondition)
-		sql += fmt.Sprintf("WHERE ")
-		for i := 0; i < length; i++ {
-			model := whereCondition[i]
-			if i < length-1 {
-				sql += fmt.Sprintf("%s ,", setUpdateValue(model))
-			} else {
-				sql += fmt.Sprintf("%s ", setUpdateValue(model))
-			}
-		}
-	}
-
-	if sqlCondition != nil && len(sqlCondition) > 0 {
-		length := len(sqlCondition)
-		for i := 0; i < length; i++ {
-			model := sqlCondition[i]
-			sql += fmt.Sprintf("%s %s", model.Key, model.Val.(string))
-		}
-	}
-
-	sql += ";"
-	logs.Info("mysql:orm select sql [%s]", sql)
+	sql := createSelectSQL(tablename, searchCondition, whereCondition, sqlCondition)
 
 	v, e := mysql.Query(sql)
 	if e != nil {

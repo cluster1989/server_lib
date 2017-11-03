@@ -10,12 +10,13 @@ type MysqlTransaction struct {
 	db    *sql.DB
 }
 
-func (t *MysqlTransaction) execute(sqlStr string, args ...interface{}) (sql.Result, error) {
+func (t *MysqlTransaction) Execute(sqlStr string, args ...interface{}) (sql.Result, error) {
 	return t.SqlTx.Exec(sqlStr, args...)
 }
 
-// 开启一个事务操作
-func (m *Mysql) NewTransaction() *MysqlTransaction {
+// // 开启一个事务操作
+func (m *Mysql) NewLocalransaction() *MysqlTransaction {
+
 	trans := &MysqlTransaction{}
 	trans.db = m.Get()
 	return trans
@@ -30,21 +31,6 @@ func (m *MysqlTransaction) Begin() error {
 		m.SqlTx, err = m.db.Begin()
 	}
 	return err
-}
-
-func (m *Mysql) Begin() (*MysqlTransaction, error) {
-	var (
-		trans = &MysqlTransaction{}
-		err   error
-	)
-	sql := m.Get()
-	if sql == nil {
-		panic(errors.New("not initialized mysql"))
-	}
-	if err = sql.Ping(); err == nil {
-		trans.SqlTx, err = sql.Begin()
-	}
-	return trans, err
 }
 
 func (t *MysqlTransaction) RollBack() error {
@@ -86,7 +72,7 @@ func (t *MysqlTransaction) Query(queryStr string, args ...interface{}) (map[int]
 
 // 更新
 func (t *MysqlTransaction) Update(updateStr string, args ...interface{}) (int64, error) {
-	result, err := t.execute(updateStr, args...)
+	result, err := t.Execute(updateStr, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -96,7 +82,7 @@ func (t *MysqlTransaction) Update(updateStr string, args ...interface{}) (int64,
 
 // 插入
 func (t *MysqlTransaction) Insert(insertStr string, args ...interface{}) (int64, error) {
-	result, err := t.execute(insertStr, args...)
+	result, err := t.Execute(insertStr, args...)
 	if err != nil {
 		return 0, err
 	}
@@ -107,7 +93,7 @@ func (t *MysqlTransaction) Insert(insertStr string, args ...interface{}) (int64,
 
 // 删除
 func (t *MysqlTransaction) Delete(deleteStr string, args ...interface{}) (int64, error) {
-	result, err := t.execute(deleteStr, args...)
+	result, err := t.Execute(deleteStr, args...)
 	if err != nil {
 		return 0, err
 	}

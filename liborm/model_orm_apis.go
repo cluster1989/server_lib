@@ -5,7 +5,6 @@ import (
 	"reflect"
 
 	"github.com/wuqifei/server_lib/libmodel"
-	"github.com/wuqifei/server_lib/logs"
 )
 
 func (orm *Orm) registerModel(tablename string, model interface{}, tags []string) {
@@ -34,8 +33,6 @@ func (orm *Orm) registerModel(tablename string, model interface{}, tags []string
 	m := newModelTableInfo(tablename, reflectVal, tags)
 
 	orm.modelCache.Set(m.Name, m)
-
-	logs.Debug("orm: succeed registed:[%s]", m.ToString())
 
 }
 

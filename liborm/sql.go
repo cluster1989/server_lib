@@ -23,17 +23,14 @@ type SQL interface {
 	// 注册数据库表
 	RegistNewTable(models []*ModelTableInfo) error
 
-	/*
-		searchCondition []*ModelTableFieldConditionInfo
-			whereCondition  []*ModelTableFieldConditionInfo
-			sqlCondition    []*ModelTableFieldConditionInfo
-	*/
 	InsertValue(tablename string, model *ModelTableInsertInfo) (int64, error)
 	UpdateValue(tablename string, model *ModelTableUpdateInfo) error
 	DeleteValue(tablename string, arr []*ModelTableFieldConditionInfo) (int64, error)
 	SelectValue(tablename string, searchCondition, whereCondition, sqlCondition []*ModelTableFieldConditionInfo) (map[int]map[string]string, error)
 	// 关闭数据库
 	Close() error
+
+	NewTransaction() Transaction
 }
 
 type Transaction interface {
@@ -46,14 +43,8 @@ type Transaction interface {
 	// 提交事物
 	Commit() error
 
-	Query(queryStr string, args ...interface{}) (map[int]map[string]string, error)
-
-	// 更新
-	Update(updateStr string, args ...interface{}) (int64, error)
-
-	// 插入
-	Insert(insertStr string, args ...interface{}) (int64, error)
-
-	// 删除
-	Delete(deleteStr string, args ...interface{}) (int64, error)
+	InsertValue(tablename string, model *ModelTableInsertInfo) (int64, error)
+	UpdateValue(tablename string, model *ModelTableUpdateInfo) error
+	DeleteValue(tablename string, arr []*ModelTableFieldConditionInfo) (int64, error)
+	SelectValue(tablename string, searchCondition, whereCondition, sqlCondition []*ModelTableFieldConditionInfo) (map[int]map[string]string, error)
 }

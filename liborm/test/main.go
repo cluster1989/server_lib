@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/json"
+
 	"github.com/wuqifei/server_lib/libmysql"
 	"github.com/wuqifei/server_lib/liborm"
+	"github.com/wuqifei/server_lib/logs"
 )
 
 type User struct {
@@ -42,14 +45,23 @@ func main() {
 	orm.RegisterDB(mysql)
 	orm.BootInDB()
 
-	user := &UserInfoBBQ8{}
-	user.Pads = "asda"
-	user.IBD = 1
-	user.KLaos = "qwer"
-	user.AKNIO = "qqqqq"
-	user.UUIB = 10
-	user.Tibick = 1235
-	orm.Insert(user)
-	orm.Update(user)
-	orm.Delete(user)
+	// user := &UserInfoBBQ8{}
+	// user.Pads = "1234132"
+	// user.IBD = 1
+	// user.KLaos = "555555"
+	// user.AKNIO = "22222"
+	// user.UUIB = 10
+	// user.Tibick = 123516162
+	// orm.Insert(user)
+	// orm.Update(user)
+	// orm.Delete(user)
+
+	user2 := &UserInfoBBQ8{}
+
+	vals, e := orm.Select(user2)
+	if e != nil {
+		logs.Debug("err------[%v]", e)
+	}
+	b, _ := json.Marshal(vals)
+	logs.Debug("------%s", string(b))
 }

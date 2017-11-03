@@ -41,8 +41,9 @@ type ModelTableInfo struct {
 	reflectVal reflect.Value
 
 	// 所有字段
-	Fields    []*ModelTableFieldInfo
-	MapFields map[string]*ModelTableFieldInfo
+	Fields         []*ModelTableFieldInfo
+	MapFields      map[string]*ModelTableFieldInfo
+	MapTableFields map[string]*ModelTableFieldInfo
 
 	HasPrimeKey         bool
 	PrimeTableFieldName string
@@ -103,6 +104,7 @@ func newModelTableInfo(tablename string, reflectVal reflect.Value, tags []string
 	info.Fullname = libmodel.GetObjFullName(reflectType)
 	info.Fields = make([]*ModelTableFieldInfo, 0)
 	info.MapFields = make(map[string]*ModelTableFieldInfo)
+	info.MapTableFields = make(map[string]*ModelTableFieldInfo)
 	info.Table = tablename
 	info.Tags = tags
 	addModelTableField(info, trueReflectVal)
@@ -125,6 +127,7 @@ func addModelTableField(info *ModelTableInfo, reflectValue reflect.Value) {
 		if fieldInfo != nil {
 			info.Fields = append(info.Fields, fieldInfo)
 			info.MapFields[fieldInfo.Name] = fieldInfo
+			info.MapTableFields[fieldInfo.TableFieldName] = fieldInfo
 			if fieldInfo.IsPrimary {
 				info.HasPrimeKey = true
 				info.PrimeFieldName = fieldInfo.Name
@@ -443,4 +446,114 @@ func deleteKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 		}
 	}
 	return conditions
+}
+
+// 这个和delete代码基本一致,只是做key的替换
+func selectKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) []*ModelTableFieldConditionInfo {
+	return deleteKeyValues(model, reflectVal, val...)
+}
+
+// 组合model和key value,这里没处理匿名函数该怎么办
+func combineModelWithKeyValues(model *ModelTableInfo, reflectVal reflect.Value, dbData map[int]map[string]string) ([]interface{}, error) {
+
+	trueValues := make([]interface{}, 0)
+	for _, v := range dbData {
+
+		m, e := reflectKeyValues(model, reflectVal, v)
+		if m == nil || e != nil {
+			continue
+		}
+		trueValues = append(trueValues, m)
+	}
+	return trueValues, nil
+}
+
+func reflectKeyValues(model *ModelTableInfo, reflectVal reflect.Value, dbData map[string]string) (interface{}, error) {
+
+	newV := reflect.New(reflectVal.Type())
+
+	rv := newV.Elem()
+	numField := rv.NumField()
+
+	for i := 0; i < numField; i++ {
+		field := rv.Field(i)
+		fieldStruct := reflectVal.Type().Field(i)
+		if fieldStruct.Anonymous {
+			val, e := reflectKeyValues(model, field, dbData)
+
+			if e != nil {
+				continue
+			}
+			annoyVal := reflect.ValueOf(val).Elem()
+			field.Set(annoyVal)
+		}
+
+		modelField := model.MapFields[fieldStruct.Name]
+		if modelField == nil {
+			continue
+		}
+		if sqlVal, ok := dbData[modelField.TableFieldName]; !ok {
+			continue
+		} else {
+
+			convertStr := libio.NewConvert(sqlVal)
+			switch field.Kind() {
+			case reflect.Bool:
+				{
+					v, e := convertStr.Int8()
+					if e != nil {
+						continue
+					}
+					if v > 0 {
+						field.SetBool(true)
+					} else {
+						field.SetBool(false)
+					}
+				}
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				{
+					v, e := convertStr.Int64()
+
+					if e != nil {
+						continue
+					}
+					field.SetInt(v)
+				}
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				{
+
+					v, e := convertStr.Uint64()
+					if e != nil {
+						continue
+					}
+					field.SetUint(v)
+
+				}
+
+			case reflect.Float32, reflect.Float64:
+				{
+					v, e := convertStr.Float64()
+					if e != nil {
+						continue
+					}
+					field.SetFloat(v)
+				}
+			case reflect.String:
+				{
+					field.SetString(sqlVal)
+				}
+			case reflect.Struct, reflect.Array, reflect.Slice, reflect.Map:
+				{
+					vfsnewV := reflect.New(field.Type())
+					e := json.Unmarshal([]byte(sqlVal), vfsnewV.Interface())
+					if e != nil {
+						continue
+					}
+					field.Set(vfsnewV)
+				}
+			}
+		}
+
+	}
+	return newV.Interface(), nil
 }

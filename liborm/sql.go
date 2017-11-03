@@ -23,9 +23,15 @@ type SQL interface {
 	// 注册数据库表
 	RegistNewTable(models []*ModelTableInfo) error
 
+	/*
+		searchCondition []*ModelTableFieldConditionInfo
+			whereCondition  []*ModelTableFieldConditionInfo
+			sqlCondition    []*ModelTableFieldConditionInfo
+	*/
 	InsertValue(tablename string, model *ModelTableInsertInfo) (int64, error)
 	UpdateValue(tablename string, model *ModelTableUpdateInfo) error
 	DeleteValue(tablename string, arr []*ModelTableFieldConditionInfo) (int64, error)
+	SelectValue(tablename string, searchCondition, whereCondition, sqlCondition []*ModelTableFieldConditionInfo) (map[int]map[string]string, error)
 	// 关闭数据库
 	Close() error
 }

@@ -72,3 +72,34 @@ func (orm *Orm) Delete(md interface{}, val ...[]*ModelTableFieldConditionInfo) (
 	v := deleteKeyValues(mi, ind, val...)
 	return orm.db.DeleteValue(mi.Table, v)
 }
+
+// 读取表数据
+// 如果传入数据，第一个val是代表想要查询的数据
+// 第二个val代表查询的where的条件
+// 第三个val中的数据，key可以是（ORDER BY, LIMIT , ） value(a desc,...)
+// 不会默认主键查询，默认全表查询
+func (orm *Orm) Select(md interface{}, vals ...[]*ModelTableFieldConditionInfo) ([]interface{}, error) {
+
+	mi, ind := orm.getModelInfoAndIndtype(md)
+	var (
+		searchCondition []*ModelTableFieldConditionInfo
+		whereCondition  []*ModelTableFieldConditionInfo
+		sqlCondition    []*ModelTableFieldConditionInfo
+	)
+	if len(vals) == 3 {
+		searchCondition = selectKeyValues(mi, ind, vals[0])
+		whereCondition = selectKeyValues(mi, ind, vals[1])
+		sqlCondition = vals[2]
+	} else if len(vals) == 2 {
+		searchCondition = selectKeyValues(mi, ind, vals[0])
+		whereCondition = selectKeyValues(mi, ind, vals[1])
+	} else if len(vals) == 1 {
+		searchCondition = selectKeyValues(mi, ind, vals[0])
+	}
+
+	v, e := orm.db.SelectValue(mi.Table, searchCondition, whereCondition, sqlCondition)
+	if e != nil {
+		return nil, e
+	}
+	return combineModelWithKeyValues(mi, ind, v)
+}

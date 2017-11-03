@@ -238,6 +238,56 @@ func (mysql *Mysql) DeleteValue(tablename string, arr []*liborm.ModelTableFieldC
 	return i, e
 }
 
+func (mysql *Mysql) SelectValue(tablename string, searchCondition, whereCondition, sqlCondition []*liborm.ModelTableFieldConditionInfo) (map[int]map[string]string, error) {
+
+	sql := fmt.Sprintf("SELECT ")
+	if searchCondition != nil && len(searchCondition) > 0 {
+		length := len(searchCondition)
+		for i := 0; i < length; i++ {
+			model := searchCondition[i]
+			if i < length-1 {
+				sql += fmt.Sprintf("%s ,", model.Key)
+			} else {
+				sql += fmt.Sprintf("%s ", model.Key)
+			}
+		}
+	} else {
+		sql += "* "
+	}
+
+	sql += fmt.Sprintf("FROM %s ", tablename)
+
+	if whereCondition != nil && len(whereCondition) > 0 {
+		length := len(whereCondition)
+		sql += fmt.Sprintf("WHERE ")
+		for i := 0; i < length; i++ {
+			model := whereCondition[i]
+			if i < length-1 {
+				sql += fmt.Sprintf("%s ,", setUpdateValue(model))
+			} else {
+				sql += fmt.Sprintf("%s ", setUpdateValue(model))
+			}
+		}
+	}
+
+	if sqlCondition != nil && len(sqlCondition) > 0 {
+		length := len(sqlCondition)
+		for i := 0; i < length; i++ {
+			model := sqlCondition[i]
+			sql += fmt.Sprintf("%s %s", model.Key, model.Val.(string))
+		}
+	}
+
+	sql += ";"
+	logs.Info("mysql:orm select sql [%s]", sql)
+
+	v, e := mysql.Query(sql)
+	if e != nil {
+		logs.Error("mysql:orm select sql [%s] error[%v]", sql, e)
+	}
+	return v, e
+}
+
 func setUpdateValue(model *liborm.ModelTableFieldConditionInfo) string {
 
 	switch reflect.TypeOf(model.Val).Kind() {

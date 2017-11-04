@@ -65,6 +65,12 @@ func (orm *Orm) Update(md interface{}, vals ...[]*ModelTableFieldConditionInfo) 
 	return orm.db.UpdateValue(mi.Table, val)
 }
 
+func (orm *Orm) UpdateByCondition(md interface{}, val ...[]*ModelTableFieldConditionInfo) error {
+	mi, ind := orm.getModelInfoAndIndtype(md)
+	v := updateConditionKeyValues(mi, ind, val...)
+	return orm.db.UpdateValue(mi.Table, v)
+}
+
 // 删除表字段,如果没有传入val 则默认删除主键
 func (orm *Orm) Delete(md interface{}, val ...[]*ModelTableFieldConditionInfo) (int64, error) {
 	mi, ind := orm.getModelInfoAndIndtype(md)
@@ -97,6 +103,31 @@ func (orm *Orm) Select(md interface{}, vals ...[]*ModelTableFieldConditionInfo) 
 	}
 
 	v, e := orm.db.SelectValue(mi.Table, searchCondition, whereCondition, sqlCondition)
+	if e != nil {
+		return nil, e
+	}
+	return combineModelWithKeyValues(mi, ind, v)
+}
+
+// 读取表数据
+// 第1个val代表查询的where的条件
+// 第2个val中的数据，key可以是（ORDER BY, LIMIT , ） value(a desc,...)
+// 不会默认主键查询，默认全表查询
+func (orm *Orm) SelectByCondition(md interface{}, vals ...[]*ModelTableFieldConditionInfo) ([]interface{}, error) {
+
+	mi, ind := orm.getModelInfoAndIndtype(md)
+	var (
+		whereCondition []*ModelTableFieldConditionInfo
+		sqlCondition   []*ModelTableFieldConditionInfo
+	)
+	if len(vals) == 2 {
+		whereCondition = selectKeyValues(mi, ind, vals[0])
+		sqlCondition = vals[2]
+	} else if len(vals) == 1 {
+		whereCondition = selectKeyValues(mi, ind, vals[0])
+	}
+
+	v, e := orm.db.SelectValue(mi.Table, nil, whereCondition, sqlCondition)
 	if e != nil {
 		return nil, e
 	}

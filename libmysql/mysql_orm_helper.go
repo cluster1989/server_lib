@@ -203,12 +203,14 @@ func createSelectSQL(tablename string, searchCondition, whereCondition, sqlCondi
 	sql += fmt.Sprintf("FROM %s ", tablename)
 
 	if whereCondition != nil && len(whereCondition) > 0 {
+
 		length := len(whereCondition)
 		sql += fmt.Sprintf("WHERE ")
 		for i := 0; i < length; i++ {
 			model := whereCondition[i]
+
 			if i < length-1 {
-				sql += fmt.Sprintf("%s ,", setUpdateValue(model))
+				sql += fmt.Sprintf("%s AND ", setUpdateValue(model))
 			} else {
 				sql += fmt.Sprintf("%s ", setUpdateValue(model))
 			}

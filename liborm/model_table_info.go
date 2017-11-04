@@ -439,7 +439,7 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 			condition.Type = primeField.TableFieldType
 			conditions = append(conditions, condition)
 		} else {
-			conditionArr := val[0]
+			conditionArr := val[1]
 			for _, condition := range conditionArr {
 
 				field, ok := model.MapFields[condition.Key]
@@ -452,6 +452,56 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 				condition.Type = field.TableFieldType
 				conditions = append(conditions, condition)
 			}
+		}
+	}
+
+	info := &ModelTableUpdateInfo{}
+	info.Updates = updates
+	info.Conditions = conditions
+	return info
+}
+
+func updateConditionKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) *ModelTableUpdateInfo {
+	conditions := make([]*ModelTableFieldConditionInfo, 0)
+	updates := make([]*ModelTableFieldConditionInfo, 0)
+
+	for _, field := range model.Fields {
+		update := &ModelTableFieldConditionInfo{}
+		update.Key = field.TableFieldName
+		indField := reflectVal.FieldByName(field.Name)
+		update.Val = indField.Interface()
+		update.Type = field.TableFieldType
+		updates = append(updates, update)
+	}
+
+	if len(val) == 0 {
+		if !model.HasPrimeKey {
+			panic(fmt.Errorf("updateConditionKeyValues model did not have a prime key [%s]", model.Fullname))
+		}
+
+		condition := &ModelTableFieldConditionInfo{}
+		condition.Key = model.PrimeTableFieldName
+		indField := reflectVal.FieldByName(model.PrimeFieldName)
+		condition.Val = indField.Interface()
+
+		primeField := model.MapTableFields[model.PrimeTableFieldName]
+		condition.Type = primeField.TableFieldType
+		conditions = append(conditions, condition)
+
+	} else {
+
+		conditionArr := val[0]
+		for _, condition := range conditionArr {
+
+			field, ok := model.MapFields[condition.Key]
+			if !ok {
+				printStr := fmt.Sprintf("updateConditionKeyValues model did not have a right condition [%s] val[%s]", model.Fullname, condition.Key)
+				panic(fmt.Errorf("%s", printStr))
+			}
+
+			condition.Key = field.TableFieldName
+			condition.Type = field.TableFieldType
+			conditions = append(conditions, condition)
 		}
 	}
 

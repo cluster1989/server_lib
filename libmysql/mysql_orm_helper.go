@@ -3,6 +3,7 @@ package libmysql
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/wuqifei/server_lib/liborm"
 	"github.com/wuqifei/server_lib/logs"
@@ -25,43 +26,81 @@ func createInsertSQL(tablename string, model *liborm.ModelTableInsertInfo) inter
 	for i := 0; i < length; i++ {
 		v := model.Value[i]
 		ormType := model.Type[i]
-		filedType := Orm2MysqlType(ormType)
-		if filedType == TypeVarcharField {
-			switch ormType {
-			case liborm.OrmTypeBoolField:
-				{
-					boolVal := 0
-					if v.(bool) {
-						boolVal = 1
-					}
-					if i < length-1 {
-						sql += fmt.Sprintf("%v,", boolVal)
-					} else {
-						sql += fmt.Sprintf("%v", boolVal)
-					}
+
+		switch ormType {
+		case liborm.OrmTypeBoolField:
+			{
+				boolVal := 0
+				if v.(bool) {
+					boolVal = 1
 				}
-			case liborm.OrmTypeStructField, liborm.OrmTypeArrayField, liborm.OrmTypeMapField:
-				{
-					b, e := json.Marshal(v)
-					if e != nil {
-						logs.Error("mysql :orm insert json error :[%v] key[%s]", e, model.Key[i])
-						return nil
-					}
-					if i < length-1 {
-						sql += fmt.Sprintf("\"%s\",", string(b))
-					} else {
-						sql += fmt.Sprintf("\"%s\"", string(b))
-					}
-					continue
+				if i < length-1 {
+					sql += fmt.Sprintf("%v,", boolVal)
+				} else {
+					sql += fmt.Sprintf("%v", boolVal)
 				}
-			case liborm.OrmTypeStringField:
-				{
-					if i < length-1 {
-						sql += fmt.Sprintf("\"%s\",", v)
-					} else {
-						sql += fmt.Sprintf("\"%s\"", v)
-					}
-					continue
+			}
+		case liborm.OrmTypeStructField, liborm.OrmTypeArrayField, liborm.OrmTypeMapField:
+			{
+				b, e := json.Marshal(v)
+				if e != nil {
+					logs.Error("mysql :orm insert json error :[%v] key[%s]", e, model.Key[i])
+					return nil
+				}
+				if i < length-1 {
+					sql += fmt.Sprintf("\"%s\",", string(b))
+				} else {
+					sql += fmt.Sprintf("\"%s\"", string(b))
+				}
+				continue
+			}
+		case liborm.OrmTypeStringField:
+			{
+				if i < length-1 {
+					sql += fmt.Sprintf("\"%s\",", v)
+				} else {
+					sql += fmt.Sprintf("\"%s\"", v)
+				}
+				continue
+			}
+		case liborm.OrmTypeDateOnlyField:
+			{
+				timeStr := v.(time.Time).Format(TypeDateFormat)
+				if i < length-1 {
+					sql += fmt.Sprintf("\"%s\",", timeStr)
+				} else {
+					sql += fmt.Sprintf("\"%s\"", timeStr)
+				}
+				continue
+			}
+		case liborm.OrmTypeDateTimeField:
+			{
+				timeStr := v.(time.Time).Format(TypeDateTimeFormat)
+				logs.Debug("time str:[%s]", timeStr)
+				if i < length-1 {
+					sql += fmt.Sprintf("\"%s\",", timeStr)
+				} else {
+					sql += fmt.Sprintf("\"%s\"", timeStr)
+				}
+				continue
+			}
+		case liborm.OrmTypeTimeOnlyField:
+			{
+				timeStr := v.(time.Time).Format(TypeTimeFormat)
+				if i < length-1 {
+					sql += fmt.Sprintf("\"%s\",", timeStr)
+				} else {
+					sql += fmt.Sprintf("\"%s\"", timeStr)
+				}
+				continue
+			}
+		case liborm.OrmTypeTimeStampField:
+			{
+				timeStamp := v.(time.Time).Unix()
+				if i < length-1 {
+					sql += fmt.Sprintf("%d,", timeStamp)
+				} else {
+					sql += fmt.Sprintf("%d", timeStamp)
 				}
 			}
 		}
@@ -185,4 +224,59 @@ func createSelectSQL(tablename string, searchCondition, whereCondition, sqlCondi
 	sql += ";"
 	logs.Info("mysql:orm select sql [%s]", sql)
 	return sql
+}
+
+func setUpdateValue(model *liborm.ModelTableFieldConditionInfo) string {
+
+	switch model.Type {
+	case liborm.OrmTypeBoolField:
+		{
+			boolIntVal := 0
+			if model.Val.(bool) {
+				boolIntVal = 1
+			}
+			return fmt.Sprintf("`%s`=%d", model.Key, boolIntVal)
+		}
+	case liborm.OrmTypeIntField, liborm.OrmTypeInt8Field, liborm.OrmTypeInt16Field, liborm.OrmTypeInt32Field, liborm.OrmTypeInt64Field,
+		liborm.OrmTypeUIntField, liborm.OrmTypeUInt8Field, liborm.OrmTypeUInt16Field, liborm.OrmTypeUInt32Field, liborm.OrmTypeUInt64Field,
+		liborm.OrmTypeFloat32Field, liborm.OrmTypeFloat64Field:
+		{
+			return fmt.Sprintf("`%s`=%v", model.Key, model.Val)
+		}
+	case liborm.OrmTypeStringField:
+		{
+			return fmt.Sprintf("`%s`=\"%s\"", model.Key, model.Val.(string))
+		}
+	case liborm.OrmTypeArrayField, liborm.OrmTypeStructField, liborm.OrmTypeMapField:
+		{
+			b, e := json.Marshal(model.Val)
+			if e != nil {
+				return ""
+			}
+			return fmt.Sprintf("`%s`=\"%s\"", model.Key, string(b))
+		}
+	case liborm.OrmTypeDateOnlyField:
+		{
+			timeStr := model.Val.(time.Time).Format(TypeDateFormat)
+			return fmt.Sprintf("`%s`=\"%s\"", model.Key, timeStr)
+		}
+	case liborm.OrmTypeDateTimeField:
+		{
+			timeStr := model.Val.(time.Time).Format(TypeDateTimeFormat)
+			return fmt.Sprintf("`%s`=\"%s\"", model.Key, timeStr)
+		}
+	case liborm.OrmTypeTimeOnlyField:
+		{
+			timeStr := model.Val.(time.Time).Format(TypeTimeFormat)
+			return fmt.Sprintf("`%s`=\"%s\"", model.Key, timeStr)
+		}
+	case liborm.OrmTypeTimeStampField:
+		{
+			timeStamp := model.Val.(time.Time).Unix()
+			return fmt.Sprintf("`%s`=%d", model.Key, timeStamp)
+		}
+	default:
+		return ""
+
+	}
 }

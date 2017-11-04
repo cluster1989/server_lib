@@ -32,6 +32,8 @@ type ModelTableUpdateInfo struct {
 type ModelTableFieldConditionInfo struct {
 	Key string
 	Val interface{}
+
+	Type OrmFieldType
 }
 
 type ModelTableInfo struct {
@@ -68,6 +70,8 @@ type ModelTableFieldInfo struct {
 	TableFieldName string
 	// 表的类型名称
 	TableFieldType OrmFieldType
+
+	TableSQLDefineType string
 	// 字段名称
 	Name string
 	// 真实字段
@@ -183,7 +187,6 @@ func newModelField(reflectValue reflect.Value, fieldStruct reflect.StructField) 
 		}
 	}
 	fieldInfo.Tags = tagArr
-
 	fieldInfo.getNullableType()
 	fieldInfo.getFieldType()
 	fieldInfo.getFieldName()
@@ -194,7 +197,7 @@ func newModelField(reflectValue reflect.Value, fieldStruct reflect.StructField) 
 
 func (info *ModelTableFieldInfo) getFieldSize() *ModelTableFieldInfo {
 
-	str, ok := info.Tags["size"]
+	str, ok := info.Tags["SIZE"]
 	if ok {
 		convStr := libio.NewConvert(str)
 		if size, e := convStr.Uint32(); e == nil {
@@ -207,7 +210,7 @@ func (info *ModelTableFieldInfo) getFieldSize() *ModelTableFieldInfo {
 func (info *ModelTableFieldInfo) getFieldName() *ModelTableFieldInfo {
 	if info.Tags != nil && len(info.Tags) > 0 {
 		// 判断是否为空
-		str, ok := info.Tags["name"]
+		str, ok := info.Tags["NAME"]
 		if ok {
 			info.TableFieldName = str
 			return info
@@ -218,6 +221,11 @@ func (info *ModelTableFieldInfo) getFieldName() *ModelTableFieldInfo {
 }
 
 func (info *ModelTableFieldInfo) getFieldType() *ModelTableFieldInfo {
+	typeStr, ok := info.Tags["TYPE"]
+	if ok {
+		typeStr = strings.ToUpper(typeStr)
+		info.TableSQLDefineType = typeStr
+	}
 
 	switch info.reflectVal.Kind() {
 	case reflect.Bool:
@@ -279,6 +287,11 @@ func (info *ModelTableFieldInfo) getFieldType() *ModelTableFieldInfo {
 	case reflect.Struct:
 		{
 			info.TableFieldType = OrmTypeStructField
+			// 如果是时间
+			if info.reflectVal.Type().String() == OrmTimeConstStr {
+				info.getTimeType()
+			}
+
 		}
 	case reflect.Array:
 		{
@@ -300,6 +313,28 @@ func (info *ModelTableFieldInfo) getFieldType() *ModelTableFieldInfo {
 	return info
 }
 
+func (info *ModelTableFieldInfo) getTimeType() *ModelTableFieldInfo {
+
+	if len(info.TableSQLDefineType) > 0 {
+		if info.TableSQLDefineType == OrmTimeTypeConstStr {
+			info.TableFieldType = OrmTypeTimeOnlyField
+			info.TableSQLDefineType = ""
+		} else if info.TableSQLDefineType == OrmDateTypeConstStr {
+			info.TableFieldType = OrmTypeDateOnlyField
+			info.TableSQLDefineType = ""
+		} else if info.TableSQLDefineType == OrmDateTimeTypeConstStr {
+			info.TableFieldType = OrmTypeDateTimeField
+			info.TableSQLDefineType = ""
+		} else if info.TableSQLDefineType == OrmTimeStampTypeConstStr {
+			info.TableFieldType = OrmTypeTimeStampField
+			info.TableSQLDefineType = ""
+		}
+	} else {
+		info.TableFieldType = OrmTypeTimeStampField
+	}
+	return info
+}
+
 func (info *ModelTableFieldInfo) getNullableType() *ModelTableFieldInfo {
 
 	if info.Tags == nil || len(info.Tags) == 0 {
@@ -308,7 +343,7 @@ func (info *ModelTableFieldInfo) getNullableType() *ModelTableFieldInfo {
 	}
 
 	// 判断是否为空
-	boolenStr, isNullOK := info.Tags["null"]
+	boolenStr, isNullOK := info.Tags["NULL"]
 	if isNullOK {
 		convertStr := libio.NewConvert(boolenStr)
 		if b, e := convertStr.Bool(); e != nil {
@@ -363,6 +398,9 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 		condition.Key = model.PrimeTableFieldName
 		indField := reflectVal.FieldByName(model.PrimeFieldName)
 		condition.Val = indField.Interface()
+
+		primeField := model.MapTableFields[model.PrimeTableFieldName]
+		condition.Type = primeField.TableFieldType
 		conditions = append(conditions, condition)
 
 		for _, field := range model.Fields {
@@ -370,6 +408,7 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 			update.Key = field.TableFieldName
 			indField := reflectVal.FieldByName(field.Name)
 			update.Val = indField.Interface()
+			update.Type = field.TableFieldType
 			updates = append(updates, update)
 		}
 	} else {
@@ -384,6 +423,7 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 			}
 
 			update.Key = field.TableFieldName
+			update.Type = field.TableFieldType
 			updates = append(updates, update)
 		}
 
@@ -396,6 +436,8 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 			condition.Key = model.PrimeTableFieldName
 			indField := reflectVal.FieldByName(model.PrimeFieldName)
 			condition.Val = indField.Interface()
+			primeField := model.MapTableFields[model.PrimeTableFieldName]
+			condition.Type = primeField.TableFieldType
 			conditions = append(conditions, condition)
 		} else {
 			conditionArr := val[0]
@@ -408,6 +450,7 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 				}
 
 				condition.Key = field.TableFieldName
+				condition.Type = field.TableFieldType
 				conditions = append(conditions, condition)
 			}
 		}
@@ -430,6 +473,9 @@ func deleteKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 		condition.Key = model.PrimeTableFieldName
 		indField := reflectVal.FieldByName(model.PrimeFieldName)
 		condition.Val = indField.Interface()
+
+		primeField := model.MapTableFields[model.PrimeTableFieldName]
+		condition.Type = primeField.TableFieldType
 		conditions = append(conditions, condition)
 	} else {
 		conditionArr := val[0]
@@ -442,6 +488,7 @@ func deleteKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 			}
 
 			condition.Key = field.TableFieldName
+			condition.Type = field.TableFieldType
 			conditions = append(conditions, condition)
 		}
 	}

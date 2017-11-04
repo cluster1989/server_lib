@@ -1,9 +1,7 @@
 package libmysql
 
 import (
-	"encoding/json"
 	"fmt"
-	"reflect"
 
 	"github.com/wuqifei/server_lib/logs"
 
@@ -40,32 +38,43 @@ func createTableSQL(model *liborm.ModelTableInfo) string {
 		column := fmt.Sprintf("`%s`", v.TableFieldName)
 
 		filedType := Orm2MysqlType(v.TableFieldType)
-		if v.ItemSize > 0 {
-			if filedType == TypeUnsignedTinyIntField ||
-				filedType == TypeUnsignedSmallIntField ||
-				filedType == TypeUnsignedMediumIntField ||
-				filedType == TypeUnsignedIntField ||
-				filedType == TypeUnsignedBIGIntField {
+		sqlType := v.TableSQLDefineType
 
-				column += fmt.Sprintf(" %s(%d) %s", filedType, v.ItemSize, "UNSIGNED")
-			} else {
-				column += fmt.Sprintf(" %s(%d)", Orm2MysqlType(v.TableFieldType), v.ItemSize)
-			}
-		} else {
-			if filedType == TypeUnsignedTinyIntField ||
-				filedType == TypeUnsignedSmallIntField ||
-				filedType == TypeUnsignedMediumIntField ||
-				filedType == TypeUnsignedIntField ||
-				filedType == TypeUnsignedBIGIntField {
-
-				column += fmt.Sprintf(" %s %s", filedType, "UNSIGNED")
-			} else if filedType == TypeVarcharField {
-
-				column += fmt.Sprintf(" %s(255)", filedType)
+		// 如果是指定类型，以指定类型为主
+		if len(sqlType) > 0 {
+			if v.ItemSize > 0 {
+				column += fmt.Sprintf(" %s", sqlType)
 			} else {
 				column += fmt.Sprintf(" %s", filedType)
 			}
+		} else {
+			if v.ItemSize > 0 {
+				if filedType == TypeUnsignedTinyIntField ||
+					filedType == TypeUnsignedSmallIntField ||
+					filedType == TypeUnsignedMediumIntField ||
+					filedType == TypeUnsignedIntField ||
+					filedType == TypeUnsignedBIGIntField {
 
+					column += fmt.Sprintf(" %s(%d) %s", filedType, v.ItemSize, "UNSIGNED")
+				} else {
+					column += fmt.Sprintf(" %s(%d)", Orm2MysqlType(v.TableFieldType), v.ItemSize)
+				}
+			} else {
+				if filedType == TypeUnsignedTinyIntField ||
+					filedType == TypeUnsignedSmallIntField ||
+					filedType == TypeUnsignedMediumIntField ||
+					filedType == TypeUnsignedIntField ||
+					filedType == TypeUnsignedBIGIntField {
+
+					column += fmt.Sprintf(" %s %s", filedType, "UNSIGNED")
+				} else if filedType == TypeVarcharField {
+
+					column += fmt.Sprintf(" %s(255)", filedType)
+				} else {
+					column += fmt.Sprintf(" %s", filedType)
+				}
+
+			}
 		}
 
 		for k, t := range v.Tags {
@@ -145,38 +154,4 @@ func (mysql *Mysql) SelectValue(tablename string, searchCondition, whereConditio
 		logs.Error("mysql:orm select sql [%s] error[%v]", sql, e)
 	}
 	return v, e
-}
-
-func setUpdateValue(model *liborm.ModelTableFieldConditionInfo) string {
-
-	switch reflect.TypeOf(model.Val).Kind() {
-	case reflect.Bool:
-		{
-			boolIntVal := 0
-			if model.Val.(bool) {
-				boolIntVal = 1
-			}
-			return fmt.Sprintf("`%s`=%d", model.Key, boolIntVal)
-		}
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32, reflect.Float64:
-		{
-			return fmt.Sprintf("`%s`=%v", model.Key, model.Val)
-		}
-	case reflect.String:
-		{
-			return fmt.Sprintf("`%s`=\"%s\"", model.Key, model.Val.(string))
-		}
-	case reflect.Struct, reflect.Array, reflect.Map, reflect.Slice:
-		{
-			b, e := json.Marshal(model.Val)
-			if e != nil {
-				return ""
-			}
-			return fmt.Sprintf("`%s`=\"%s\"", model.Key, string(b))
-		}
-
-	default:
-		return ""
-
-	}
 }

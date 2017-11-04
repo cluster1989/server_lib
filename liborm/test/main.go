@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"time"
 
 	"github.com/wuqifei/server_lib/libmysql"
 	"github.com/wuqifei/server_lib/liborm"
@@ -16,7 +16,7 @@ type User struct {
 }
 
 // 继承于FF118
-type USER8999 struct {
+type USER8311 struct {
 	IBD     uint64 `orm:"name:id|null:false|AUTO_INCREMENT|UNIQUE|PRIMARY KEY"`
 	Pads    string `orm:"size:150|name:txt_b"`
 	KLaos   string `orm:"null:true"`
@@ -24,6 +24,8 @@ type USER8999 struct {
 	Bkaskl  string
 	Bkaskl2 string
 	Bkaskl3 string
+	// 时间戳的type指定了4个类型，timestamp，time,date,datetime/这四种，多余的类型也不会支持
+	FuckTime time.Time `orm:"type:datetime"`
 
 	User
 }
@@ -41,22 +43,23 @@ var (
 
 func main() {
 	orm := liborm.NewOrm()
-	orm.RegisterModelWithTableName("", &USER8999{}, []string{"ENGINE=InnoDB", "CHARSET=utf8"})
+	orm.RegisterModelWithTableName("", &USER8311{}, []string{"ENGINE=InnoDB", "CHARSET=utf8"})
 	mysql := libmysql.NewMysql(option)
 	orm.RegisterDB(mysql)
 	orm.BootInDB()
 
-	user := &USER8999{}
+	user := &USER8311{}
 	user.Pads = "wwwww"
 	user.IBD = 123414123
 	user.KLaos = "wwwww"
 	user.AKNIO = "swww"
 	user.UUIB = 123411
-	user.Tibick = 889
-	// id, _ := orm.Insert(user)
-	// logs.Info("id:[%d]", id)
-	// orm.Update(user)
-	// orm.Delete(user)
+	user.Tibick = 1
+	user.FuckTime = time.Now()
+	id, _ := orm.Insert(user)
+	logs.Info("id:[%d]", id)
+	orm.Update(user)
+	orm.Delete(user)
 
 	// user2 := &UserInfoBBQ8{}
 
@@ -67,21 +70,21 @@ func main() {
 	// b, _ := json.Marshal(vals)
 	// logs.Debug("------%s", string(b))
 
-	t := orm.NewTransaction()
-	t.Begin()
-	id, _ := t.Insert(user)
-	user.IBD = uint64(id)
-	user.KLaos = "qqqqqq"
-	user.Tibick = 575757
-	t.Update(user)
-	vals, _ := t.Select(user)
+	// t := orm.NewTransaction()
+	// t.Begin()
+	// id, _ := t.Insert(user)
+	// user.IBD = uint64(id)
+	// user.KLaos = "qqqqqq"
+	// user.Tibick = 575757
+	// t.Update(user)
+	// vals, _ := t.Select(user)
 
-	b, _ := json.Marshal(vals)
-	logs.Debug("---1---%s", string(b))
-	t.Commit()
+	// b, _ := json.Marshal(vals)
+	// logs.Debug("---1---%s", string(b))
+	// t.Commit()
 
-	vals, _ = orm.Select(user)
+	// vals, _ = orm.Select(user)
 
-	b, _ = json.Marshal(vals)
-	logs.Debug("---2---%s", string(b))
+	// b, _ = json.Marshal(vals)
+	// logs.Debug("---2---%s", string(b))
 }

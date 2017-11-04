@@ -5,6 +5,12 @@ import (
 )
 
 const (
+	TypeDateFormat     = "2006-01-01"
+	TypeTimeFormat     = "03:03:03"
+	TypeDateTimeFormat = "2006-01-01 03:03:03"
+)
+
+const (
 	// mysql 所有类型 ,数值类型
 	TypeTinyIntField   = "TINYINT"
 	TypeSmallIntField  = "SMALLINT"
@@ -25,11 +31,11 @@ const (
 	TypeDecimalField = "DECIMAL"
 
 	// 时间类型
-	TypeDateField       = "DATE"
-	TypeTimeField       = "TIME"
-	TypeYearField       = "YEAR"
-	TypeDateTimeField   = "DATETIME"
-	TypeTimeStampFieled = "TIMESTAMP"
+	TypeDateField      = "DATE"
+	TypeTimeField      = "TIME"
+	TypeYearField      = "YEAR"
+	TypeDateTimeField  = "DATETIME"
+	TypeTimeStampField = "TIMESTAMP"
 
 	// 字符串类型
 	TypeCharField       = "CHAR"
@@ -154,6 +160,25 @@ func Orm2MysqlType(l liborm.OrmFieldType) string {
 	case liborm.OrmTypeMapField:
 		{
 			return TypeVarcharField
+		}
+		// 时间处理模块
+	case liborm.OrmTypeTimeOnlyField:
+		{
+			return TypeTimeField
+		}
+
+	case liborm.OrmTypeDateTimeField:
+		{
+			return TypeDateTimeField
+		}
+
+	case liborm.OrmTypeTimeStampField:
+		{
+			return TypeTimeStampField
+		}
+	case liborm.OrmTypeDateOnlyField:
+		{
+			return TypeDateField
 		}
 	}
 	return ""

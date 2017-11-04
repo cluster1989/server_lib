@@ -23,4 +23,9 @@ const (
 	OrmTypeStringField
 	OrmTypeArrayField
 	OrmTypeMapField
+	// 时间类型
+	OrmTypeTimeStampField // 时间戳类型
+	OrmTypeDateOnlyField  // 日期类型2008-13-12这种
+	OrmTypeTimeOnlyField  //时间类型 10:23:32
+	OrmTypeDateTimeField  //包含上面两个类型
 )

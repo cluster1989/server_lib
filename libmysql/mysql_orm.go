@@ -57,7 +57,7 @@ func createTableSQL(model *liborm.ModelTableInfo) string {
 
 					column += fmt.Sprintf(" %s(%d) %s", filedType, v.ItemSize, "UNSIGNED")
 				} else {
-					column += fmt.Sprintf(" %s(%d)", Orm2MysqlType(v.TableFieldType), v.ItemSize)
+					column += fmt.Sprintf(" %s(%d)", filedType, v.ItemSize)
 				}
 			} else {
 				if filedType == TypeUnsignedTinyIntField ||

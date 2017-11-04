@@ -191,7 +191,6 @@ func newModelField(reflectValue reflect.Value, fieldStruct reflect.StructField) 
 	fieldInfo.getFieldType()
 	fieldInfo.getFieldName()
 	fieldInfo.getFieldSize()
-
 	return fieldInfo
 }
 

@@ -103,12 +103,14 @@ func createInsertSQL(tablename string, model *liborm.ModelTableInsertInfo) inter
 					sql += fmt.Sprintf("%d", timeStamp)
 				}
 			}
-		}
-
-		if i < length-1 {
-			sql += fmt.Sprintf("%v,", v)
-		} else {
-			sql += fmt.Sprintf("%v", v)
+		default:
+			{
+				if i < length-1 {
+					sql += fmt.Sprintf("%v,", v)
+				} else {
+					sql += fmt.Sprintf("%v", v)
+				}
+			}
 		}
 	}
 	sql += ")"

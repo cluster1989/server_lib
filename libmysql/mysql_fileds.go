@@ -101,6 +101,10 @@ func Orm2MysqlType(l liborm.OrmFieldType) string {
 		{
 			return TypeTinyIntField
 		}
+	case liborm.OrmTypeIntField:
+		{
+			return TypeIntField
+		}
 	case liborm.OrmTypeInt8Field:
 		{
 			return TypeSmallIntField

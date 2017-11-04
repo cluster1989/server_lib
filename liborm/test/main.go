@@ -5,7 +5,6 @@ import (
 
 	"github.com/wuqifei/server_lib/libmysql"
 	"github.com/wuqifei/server_lib/liborm"
-	"github.com/wuqifei/server_lib/logs"
 )
 
 type User struct {
@@ -20,8 +19,8 @@ type USER8311 struct {
 	IBD     uint64 `orm:"name:id|null:false|AUTO_INCREMENT|UNIQUE|PRIMARY KEY"`
 	Pads    string `orm:"size:150|name:txt_b"`
 	KLaos   string `orm:"null:true"`
-	AKNIO   string
-	Bkaskl  string
+	AKNIO   int
+	Bkaskl  int
 	Bkaskl2 string
 	Bkaskl3 string
 	// 时间戳的type指定了4个类型，timestamp，time,date,datetime/这四种，多余的类型也不会支持
@@ -48,18 +47,18 @@ func main() {
 	orm.RegisterDB(mysql)
 	orm.BootInDB()
 
-	user := &USER8311{}
-	user.Pads = "wwwww"
-	user.IBD = 123414123
-	user.KLaos = "wwwww"
-	user.AKNIO = "swww"
-	user.UUIB = 123411
-	user.Tibick = 1
-	user.FuckTime = time.Now()
-	id, _ := orm.Insert(user)
-	logs.Info("id:[%d]", id)
-	orm.Update(user)
-	orm.Delete(user)
+	// user := &USER8311{}
+	// user.Pads = "wwwww"
+	// user.IBD = 123414123
+	// user.KLaos = "wwwww"
+	// user.AKNIO = 123
+	// user.UUIB = 123411
+	// user.Tibick = 1
+	// user.FuckTime = time.Now()
+	// id, _ := orm.Insert(user)
+	// logs.Info("id:[%d]", id)
+	// orm.Update(user)
+	// orm.Delete(user)
 
 	// user2 := &UserInfoBBQ8{}
 

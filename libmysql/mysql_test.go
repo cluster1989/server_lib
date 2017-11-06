@@ -32,10 +32,8 @@ func TestTrans(t *testing.T) {
 	// msql.Insert("insert user set tel = 'xxxxx',pwd = '123456'")
 	// msql.Insert("insert user set tel = 'xxxxxx',pwd = '123456'")
 
-	trans, e := msql.NewLocalransaction()
-	if e != nil {
-		t.Fatal(e)
-	}
+	trans := msql.NewLocalransaction()
+	trans.Begin()
 	ret, e := trans.Query("select * from user where tel = 'xx'")
 	if e != nil {
 		t.Fatal(e)

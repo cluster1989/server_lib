@@ -1,8 +1,6 @@
 package libmysql
 
 import (
-	"fmt"
-
 	"github.com/wuqifei/server_lib/liborm"
 	"github.com/wuqifei/server_lib/logs"
 )
@@ -10,7 +8,8 @@ import (
 func (trans *MysqlTransaction) InsertValue(tablename string, model *liborm.ModelTableInsertInfo) (int64, error) {
 	sqlInter := createInsertSQL(tablename, model)
 	if sqlInter == nil {
-		return 0, fmt.Errorf("Insert sql create error:[%s]", tablename)
+		logs.Error("Insert sql create error:[%s]", tablename)
+		return 0, OrmSqlCreateError
 	}
 
 	i, e := trans.Insert(sqlInter.(string))
@@ -23,7 +22,8 @@ func (trans *MysqlTransaction) InsertValue(tablename string, model *liborm.Model
 func (trans *MysqlTransaction) UpdateValue(tablename string, model *liborm.ModelTableUpdateInfo) error {
 	sqlInter := createUpdateSQL(tablename, model)
 	if sqlInter == nil {
-		return fmt.Errorf("update sql create error:[%s]", tablename)
+		logs.Error("update sql create error:[%s]", tablename)
+		return OrmSqlCreateError //fmt.Errorf()
 	}
 	_, e := trans.Update(sqlInter.(string))
 	if e != nil {
@@ -35,7 +35,8 @@ func (trans *MysqlTransaction) UpdateValue(tablename string, model *liborm.Model
 func (trans *MysqlTransaction) DeleteValue(tablename string, arr []*liborm.ModelTableFieldConditionInfo) (int64, error) {
 	sqlInter := createDeleteSQL(tablename, arr)
 	if sqlInter == nil {
-		return 0, fmt.Errorf("delete sql create error:[%s]", tablename)
+		logs.Error("delete sql create error:[%s]", tablename)
+		return 0, OrmSqlCreateError //fmt.Errorf()
 	}
 	i, e := trans.Delete(sqlInter.(string))
 	if e != nil {

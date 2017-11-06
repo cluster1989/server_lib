@@ -112,7 +112,8 @@ func createTableSQL(model *liborm.ModelTableInfo) string {
 func (mysql *Mysql) InsertValue(tablename string, model *liborm.ModelTableInsertInfo) (int64, error) {
 	sqlInter := createInsertSQL(tablename, model)
 	if sqlInter == nil {
-		return 0, fmt.Errorf("Insert sql create error:[%s]", tablename)
+		logs.Error("Insert sql create error:[%s]", tablename)
+		return 0, OrmSqlCreateError //fmt.Errorf(")
 	}
 	i, e := mysql.Insert(sqlInter.(string))
 	if e != nil {
@@ -124,7 +125,8 @@ func (mysql *Mysql) InsertValue(tablename string, model *liborm.ModelTableInsert
 func (mysql *Mysql) UpdateValue(tablename string, model *liborm.ModelTableUpdateInfo) error {
 	sqlInter := createUpdateSQL(tablename, model)
 	if sqlInter == nil {
-		return fmt.Errorf("update sql create error:[%s]", tablename)
+		logs.Error("update sql create error:[%s]", tablename)
+		return OrmSqlCreateError //fmt.Errorf()
 	}
 	_, e := mysql.Update(sqlInter.(string))
 	if e != nil {
@@ -136,7 +138,8 @@ func (mysql *Mysql) UpdateValue(tablename string, model *liborm.ModelTableUpdate
 func (mysql *Mysql) DeleteValue(tablename string, arr []*liborm.ModelTableFieldConditionInfo) (int64, error) {
 	sqlInter := createDeleteSQL(tablename, arr)
 	if sqlInter == nil {
-		return 0, fmt.Errorf("delete sql create error:[%s]", tablename)
+		logs.Error("delete sql create error:[%s]", tablename)
+		return 0, OrmSqlCreateError // fmt.Errorf()
 	}
 	i, e := mysql.Delete(sqlInter.(string))
 	if e != nil {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/wuqifei/server_lib/libio"
 	"github.com/wuqifei/server_lib/libmodel"
+	"github.com/wuqifei/server_lib/logs"
 )
 
 const (
@@ -385,12 +386,13 @@ func insertKeyValues(model *ModelTableInfo, reflectVal reflect.Value) *ModelTabl
 // vals[0]表示修改的字段 比如 a = 5000,b = 10000等等，逗号分割
 // vals[1]表示修改的条件，如上
 // 如果不传的话，默认用model的主键进行更新，如果vals没有传递的话，默认全部更新
-func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) *ModelTableUpdateInfo {
+func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) (*ModelTableUpdateInfo, error) {
 	conditions := make([]*ModelTableFieldConditionInfo, 0)
 	updates := make([]*ModelTableFieldConditionInfo, 0)
 	if len(val) == 0 {
 		if !model.HasPrimeKey {
-			panic(fmt.Errorf("update model did not have a prime key [%s]", model.Fullname))
+			logs.Error("update model did not have a prime key [%s]", model.Fullname)
+			return nil, DidnotHavePrimeKeyError
 		}
 
 		condition := &ModelTableFieldConditionInfo{}
@@ -418,7 +420,8 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 			field, ok := model.MapFields[update.Key]
 			if !ok {
 				printStr := fmt.Sprintf("update model did not have a right update [%s] val[%s]", model.Fullname, update.Key)
-				panic(fmt.Errorf("%s", printStr))
+				logs.Error(printStr)
+				return nil, ConditionValError
 			}
 
 			update.Key = field.TableFieldName
@@ -428,7 +431,8 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 
 		if len(val) < 2 {
 			if !model.HasPrimeKey {
-				panic(fmt.Errorf("update model did not have a prime key [%s]", model.Fullname))
+				logs.Error("update model did not have a prime key [%s]", model.Fullname)
+				return nil, DidnotHavePrimeKeyError
 			}
 
 			condition := &ModelTableFieldConditionInfo{}
@@ -445,7 +449,8 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 				field, ok := model.MapFields[condition.Key]
 				if !ok {
 					printStr := fmt.Sprintf("update model did not have a right condition [%s] val[%s]", model.Fullname, condition.Key)
-					panic(fmt.Errorf("%s", printStr))
+					logs.Error(printStr)
+					return nil, ConditionValError
 				}
 
 				condition.Key = field.TableFieldName
@@ -458,10 +463,10 @@ func updateKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 	info := &ModelTableUpdateInfo{}
 	info.Updates = updates
 	info.Conditions = conditions
-	return info
+	return info, nil
 }
 
-func updateConditionKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) *ModelTableUpdateInfo {
+func updateConditionKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) (*ModelTableUpdateInfo, error) {
 	conditions := make([]*ModelTableFieldConditionInfo, 0)
 	updates := make([]*ModelTableFieldConditionInfo, 0)
 
@@ -476,7 +481,8 @@ func updateConditionKeyValues(model *ModelTableInfo, reflectVal reflect.Value, v
 
 	if len(val) == 0 {
 		if !model.HasPrimeKey {
-			panic(fmt.Errorf("updateConditionKeyValues model did not have a prime key [%s]", model.Fullname))
+			logs.Error("updateConditionKeyValues model did not have a prime key [%s]", model.Fullname)
+			return nil, DidnotHavePrimeKeyError
 		}
 
 		condition := &ModelTableFieldConditionInfo{}
@@ -496,7 +502,8 @@ func updateConditionKeyValues(model *ModelTableInfo, reflectVal reflect.Value, v
 			field, ok := model.MapFields[condition.Key]
 			if !ok {
 				printStr := fmt.Sprintf("updateConditionKeyValues model did not have a right condition [%s] val[%s]", model.Fullname, condition.Key)
-				panic(fmt.Errorf("%s", printStr))
+				logs.Error(printStr)
+				return nil, ConditionValError
 			}
 
 			condition.Key = field.TableFieldName
@@ -508,14 +515,15 @@ func updateConditionKeyValues(model *ModelTableInfo, reflectVal reflect.Value, v
 	info := &ModelTableUpdateInfo{}
 	info.Updates = updates
 	info.Conditions = conditions
-	return info
+	return info, nil
 }
 
-func deleteKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) []*ModelTableFieldConditionInfo {
+func deleteKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) ([]*ModelTableFieldConditionInfo, error) {
 	conditions := make([]*ModelTableFieldConditionInfo, 0)
 	if len(val) == 0 {
 		if !model.HasPrimeKey {
-			panic(fmt.Errorf("update model did not have a prime key [%s]", model.Fullname))
+			logs.Error("deleteKeyValues model did not have a prime key [%s]", model.Fullname)
+			return nil, DidnotHavePrimeKeyError
 		}
 
 		condition := &ModelTableFieldConditionInfo{}
@@ -532,8 +540,9 @@ func deleteKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 
 			field, ok := model.MapFields[condition.Key]
 			if !ok {
-				printStr := fmt.Sprintf("update model did not have a right condition [%s] val[%s]", model.Fullname, condition.Key)
-				panic(fmt.Errorf("%s", printStr))
+				printStr := fmt.Sprintf("deleteKeyValues model did not have a right condition [%s] val[%s]", model.Fullname, condition.Key)
+				logs.Error(printStr)
+				return nil, ConditionValError
 			}
 
 			condition.Key = field.TableFieldName
@@ -541,11 +550,11 @@ func deleteKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*
 			conditions = append(conditions, condition)
 		}
 	}
-	return conditions
+	return conditions, nil
 }
 
 // 这个和delete代码基本一致,只是做key的替换
-func selectKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) []*ModelTableFieldConditionInfo {
+func selectKeyValues(model *ModelTableInfo, reflectVal reflect.Value, val ...[]*ModelTableFieldConditionInfo) ([]*ModelTableFieldConditionInfo, error) {
 	return deleteKeyValues(model, reflectVal, val...)
 }
 

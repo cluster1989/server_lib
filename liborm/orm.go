@@ -60,21 +60,30 @@ func (orm *Orm) Insert(md interface{}) (int64, error) {
 func (orm *Orm) Update(md interface{}, vals ...[]*ModelTableFieldConditionInfo) error {
 	mi, ind := orm.getModelInfoAndIndtype(md)
 
-	val := updateKeyValues(mi, ind, vals...)
+	val, err := updateKeyValues(mi, ind, vals...)
+	if err != nil {
+		return err
+	}
 
 	return orm.db.UpdateValue(mi.Table, val)
 }
 
 func (orm *Orm) UpdateByCondition(md interface{}, val ...[]*ModelTableFieldConditionInfo) error {
 	mi, ind := orm.getModelInfoAndIndtype(md)
-	v := updateConditionKeyValues(mi, ind, val...)
+	v, e := updateConditionKeyValues(mi, ind, val...)
+	if e != nil {
+		return e
+	}
 	return orm.db.UpdateValue(mi.Table, v)
 }
 
 // 删除表字段,如果没有传入val 则默认删除主键
 func (orm *Orm) Delete(md interface{}, val ...[]*ModelTableFieldConditionInfo) (int64, error) {
 	mi, ind := orm.getModelInfoAndIndtype(md)
-	v := deleteKeyValues(mi, ind, val...)
+	v, e := deleteKeyValues(mi, ind, val...)
+	if e != nil {
+		return 0, e
+	}
 	return orm.db.DeleteValue(mi.Table, v)
 }
 
@@ -91,15 +100,31 @@ func (orm *Orm) Select(md interface{}, vals ...[]*ModelTableFieldConditionInfo) 
 		whereCondition  []*ModelTableFieldConditionInfo
 		sqlCondition    []*ModelTableFieldConditionInfo
 	)
+	var err error
 	if len(vals) == 3 {
-		searchCondition = selectKeyValues(mi, ind, vals[0])
-		whereCondition = selectKeyValues(mi, ind, vals[1])
+		searchCondition, err = selectKeyValues(mi, ind, vals[0])
+		if err != nil {
+			return nil, err
+		}
+		whereCondition, err = selectKeyValues(mi, ind, vals[1])
+		if err != nil {
+			return nil, err
+		}
 		sqlCondition = vals[2]
 	} else if len(vals) == 2 {
-		searchCondition = selectKeyValues(mi, ind, vals[0])
-		whereCondition = selectKeyValues(mi, ind, vals[1])
+		searchCondition, err = selectKeyValues(mi, ind, vals[0])
+		if err != nil {
+			return nil, err
+		}
+		whereCondition, err = selectKeyValues(mi, ind, vals[1])
+		if err != nil {
+			return nil, err
+		}
 	} else if len(vals) == 1 {
-		searchCondition = selectKeyValues(mi, ind, vals[0])
+		searchCondition, err = selectKeyValues(mi, ind, vals[0])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	v, e := orm.db.SelectValue(mi.Table, searchCondition, whereCondition, sqlCondition)
@@ -120,11 +145,18 @@ func (orm *Orm) SelectByCondition(md interface{}, vals ...[]*ModelTableFieldCond
 		whereCondition []*ModelTableFieldConditionInfo
 		sqlCondition   []*ModelTableFieldConditionInfo
 	)
+	var err error
 	if len(vals) == 2 {
-		whereCondition = selectKeyValues(mi, ind, vals[0])
-		sqlCondition = vals[2]
+		whereCondition, err = selectKeyValues(mi, ind, vals[0])
+		if err != nil {
+			return nil, err
+		}
+		sqlCondition = vals[1]
 	} else if len(vals) == 1 {
-		whereCondition = selectKeyValues(mi, ind, vals[0])
+		whereCondition, err = selectKeyValues(mi, ind, vals[0])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	v, e := orm.db.SelectValue(mi.Table, nil, whereCondition, sqlCondition)

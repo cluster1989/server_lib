@@ -42,15 +42,20 @@ func (trans *OrmTransaction) Insert(md interface{}) (int64, error) {
 func (trans *OrmTransaction) Update(md interface{}, vals ...[]*ModelTableFieldConditionInfo) error {
 	mi, ind := trans.orm.getModelInfoAndIndtype(md)
 
-	val := updateKeyValues(mi, ind, vals...)
-
+	val, err := updateKeyValues(mi, ind, vals...)
+	if err != nil {
+		return err
+	}
 	return trans.transaction.UpdateValue(mi.Table, val)
 }
 
 // 删除表字段,如果没有传入val 则默认删除主键
 func (trans *OrmTransaction) Delete(md interface{}, val ...[]*ModelTableFieldConditionInfo) (int64, error) {
 	mi, ind := trans.orm.getModelInfoAndIndtype(md)
-	v := deleteKeyValues(mi, ind, val...)
+	v, err := deleteKeyValues(mi, ind, val...)
+	if err != nil {
+		return 0, err
+	}
 	return trans.transaction.DeleteValue(mi.Table, v)
 }
 
@@ -67,15 +72,31 @@ func (trans *OrmTransaction) Select(md interface{}, vals ...[]*ModelTableFieldCo
 		whereCondition  []*ModelTableFieldConditionInfo
 		sqlCondition    []*ModelTableFieldConditionInfo
 	)
+	var err error
 	if len(vals) == 3 {
-		searchCondition = selectKeyValues(mi, ind, vals[0])
-		whereCondition = selectKeyValues(mi, ind, vals[1])
+		searchCondition, err = selectKeyValues(mi, ind, vals[0])
+		if err != nil {
+			return nil, err
+		}
+		whereCondition, err = selectKeyValues(mi, ind, vals[1])
+		if err != nil {
+			return nil, err
+		}
 		sqlCondition = vals[2]
 	} else if len(vals) == 2 {
-		searchCondition = selectKeyValues(mi, ind, vals[0])
-		whereCondition = selectKeyValues(mi, ind, vals[1])
+		searchCondition, err = selectKeyValues(mi, ind, vals[0])
+		if err != nil {
+			return nil, err
+		}
+		whereCondition, err = selectKeyValues(mi, ind, vals[1])
+		if err != nil {
+			return nil, err
+		}
 	} else if len(vals) == 1 {
-		searchCondition = selectKeyValues(mi, ind, vals[0])
+		searchCondition, err = selectKeyValues(mi, ind, vals[0])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	v, e := trans.transaction.SelectValue(mi.Table, searchCondition, whereCondition, sqlCondition)

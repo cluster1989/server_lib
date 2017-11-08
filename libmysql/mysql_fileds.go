@@ -20,13 +20,13 @@ const (
 	TypeFloatField     = "FLOAT"
 	TypeDoubleField    = "DOUBLE"
 
-	TypeUnsignedTinyIntField   = "TINYINT"
-	TypeUnsignedSmallIntField  = "SMALLINT"
-	TypeUnsignedMediumIntField = "MEDIUMINT"
-	TypeUnsignedIntField       = "INT"
-	TypeUnsignedBIGIntField    = "BIGINT"
-	TypeUnsignedFloatField     = "FLOAT"
-	TypeUnsignedDoubleField    = "DOUBLE"
+	TypeUnsignedTinyIntField   = " TINYINT"
+	TypeUnsignedSmallIntField  = " SMALLINT"
+	TypeUnsignedMediumIntField = " MEDIUMINT"
+	TypeUnsignedIntField       = " INT"
+	TypeUnsignedBIGIntField    = " BIGINT"
+	TypeUnsignedFloatField     = " FLOAT"
+	TypeUnsignedDoubleField    = " DOUBLE"
 
 	TypeDecimalField = "DECIMAL"
 

@@ -82,7 +82,6 @@ func (r *RedisPool) Dial() (c redis.Conn, err error) {
 
 // 执行redis命令
 func (r *RedisPool) DoRedis(commandName string, args ...interface{}) (reply interface{}, err error) {
-	// fmt.Print("commandName:", commandName, "\nargs:", args, "\n")
 	conn := r.Get()
 	defer conn.Close()
 	return conn.Do(commandName, args...)

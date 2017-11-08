@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/wuqifei/server_lib/libmysql"
@@ -41,11 +43,12 @@ var (
 )
 
 func main() {
-	orm := liborm.NewOrm()
-	orm.RegisterModelWithTableName("", &USER8311{}, []string{"ENGINE=InnoDB", "CHARSET=utf8"})
-	mysql := libmysql.NewMysql(option)
-	orm.RegisterDB(mysql)
-	orm.BootInDB()
+	testObj2Str()
+	// orm := liborm.NewOrm()
+	// orm.RegisterModelWithTableName("", &USER8311{}, []string{"ENGINE=InnoDB", "CHARSET=utf8"})
+	// mysql := libmysql.NewMysql(option)
+	// orm.RegisterDB(mysql)
+	// orm.BootInDB()
 
 	// user := &USER8311{}
 	// user.Pads = "wwwww"
@@ -86,4 +89,27 @@ func main() {
 
 	// b, _ = json.Marshal(vals)
 	// logs.Debug("---2---%s", string(b))
+
+}
+
+type A struct {
+	T  string `orm:"name:ti"`
+	T2 string `orm:"-"`
+	T3 string
+	T4 string
+}
+
+type B struct {
+	TF string
+	TB string
+	A
+}
+
+func testObj2Str() {
+	mapStr := map[string]string{"t_f": "1234", "t_b": "3456", "ti": "6666", "t2": "asda", "t4": "asdas"}
+	orm := liborm.NewOrm()
+	b := &B{}
+	orm.TranslateIntoModel(b, mapStr)
+	bb, _ := json.Marshal(b)
+	fmt.Printf("bb:[%s]\n", string(bb))
 }

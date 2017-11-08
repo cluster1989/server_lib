@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/wuqifei/server_lib/libio"
-	"github.com/wuqifei/server_lib/libmodel"
 	"github.com/wuqifei/server_lib/logs"
 )
 
@@ -106,7 +105,7 @@ func newModelTableInfo(tablename string, reflectVal reflect.Value, tags []string
 	trueReflectVal := reflect.Indirect(reflectVal)
 	reflectType := trueReflectVal.Type()
 	info.Name = reflectType.Name()
-	info.Fullname = libmodel.GetObjFullName(reflectType)
+	info.Fullname = getObjFullName(reflectType)
 	info.Fields = make([]*ModelTableFieldInfo, 0)
 	info.MapFields = make(map[string]*ModelTableFieldInfo)
 	info.MapTableFields = make(map[string]*ModelTableFieldInfo)
@@ -163,7 +162,14 @@ func newModelField(reflectValue reflect.Value, fieldStruct reflect.StructField) 
 	}
 	tagArr := make(map[string]string)
 	if len(tag) > 0 {
-		arr := strings.Split(tag, "|")
+		var arr = make([]string, 0)
+
+		if strings.Contains(tag, "|") {
+			arr = strings.Split(tag, "|")
+		} else {
+			arr = append(arr, tag)
+		}
+
 		for _, v := range arr {
 			vArr := strings.Split(v, ":")
 			key, value := "", ""
@@ -216,7 +222,7 @@ func (info *ModelTableFieldInfo) getFieldName() *ModelTableFieldInfo {
 			return info
 		}
 	}
-	info.TableFieldName = libmodel.ObjName2SqlName(info.Name)
+	info.TableFieldName = objName2SqlName(info.Name)
 	return info
 }
 
@@ -661,4 +667,31 @@ func reflectKeyValues(model *ModelTableInfo, reflectVal reflect.Value, dbData ma
 
 	}
 	return newV.Interface(), nil
+}
+
+func getObjFullName(reflectType reflect.Type) string {
+	return reflectType.PkgPath() + "." + reflectType.Name()
+}
+
+func objName2SqlName(str string) string {
+	length := len(str)
+
+	b := make([]byte, 0)
+	for i := 0; i < length; i++ {
+		c := str[i]
+		if c == '_' {
+			continue
+		}
+		if i == 0 {
+			// 将c加入byte数组中
+			b = append(b, c)
+			continue
+		}
+		// 如果在A-Z加入下滑线_
+		if c >= 'A' && c <= 'Z' {
+			b = append(b, '_')
+		}
+		b = append(b, c)
+	}
+	return strings.ToLower(string(b))
 }

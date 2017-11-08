@@ -21,6 +21,7 @@ func (mysql *Mysql) RegistNewTable(models []*liborm.ModelTableInfo) error {
 		_, err = mysql.Excute(sql)
 		if err != nil {
 			logs.Error("mysql :sql[%s]\n excute error[%v]", err)
+			return err
 		}
 	}
 	return err

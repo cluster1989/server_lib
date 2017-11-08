@@ -42,8 +42,7 @@ func (orm *Orm) BootInDB() error {
 	for _, v := range orm.modelCache.Items {
 		tables = append(tables, v.(*ModelTableInfo))
 	}
-	orm.db.RegistNewTable(tables)
-	return nil
+	return orm.db.RegistNewTable(tables)
 }
 
 // 返回id

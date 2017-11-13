@@ -13,7 +13,7 @@ func (t *T1) Close() error {
 }
 
 func TestConcurrentMap(t *testing.T) {
-	ma := NewCocurrentGroup()
+	ma := NewCocurrentIDGroup()
 	obj0 := &T1{}
 	ma.Set(50, obj0)
 	obj1 := &T1{}

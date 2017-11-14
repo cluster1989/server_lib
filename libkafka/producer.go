@@ -162,9 +162,9 @@ func (p *Producer) EasySend(topic string, val []byte) error {
 		if p.syncProducer != nil {
 			patition, offset, err := p.syncProducer.SendMessage(msg)
 			if err != nil {
-				logs.Error("producer:easy send msg error! partition:[%d] offset[%d] err[%v](topic[%s]key[%s]val[%v])", patition, offset, err, topic, val)
+				logs.Error("producer:easy send msg error! partition:[%d] offset[%d] err[%v](topic[%s]val[%v])", patition, offset, err, topic, val)
 			} else {
-				logs.Info("producer:easy send msg partition:[%d] offset[%d](topic[%s]key[%s]val[%v])", patition, offset, topic, val)
+				logs.Info("producer:easy send msg partition:[%d] offset[%d](topic[%s]val[%v])", patition, offset, topic, val)
 			}
 
 			return err

@@ -7,6 +7,7 @@ import (
 
 	"github.com/wuqifei/server_lib/libmysql"
 	"github.com/wuqifei/server_lib/liborm"
+	"github.com/wuqifei/server_lib/logs"
 )
 
 type User struct {
@@ -43,23 +44,23 @@ var (
 )
 
 func main() {
-	testObj2Str()
-	// orm := liborm.NewOrm()
-	// orm.RegisterModelWithTableName("", &USER8311{}, []string{"ENGINE=InnoDB", "CHARSET=utf8"})
-	// mysql := libmysql.NewMysql(option)
-	// orm.RegisterDB(mysql)
-	// orm.BootInDB()
+	// testObj2Str()
+	orm := liborm.NewOrm()
+	orm.RegisterModelWithTableName("", &USER8311{}, []string{"ENGINE=InnoDB", "CHARSET=utf8"})
+	mysql := libmysql.NewMysql(option)
+	orm.RegisterDB(mysql)
+	orm.BootInDB()
 
-	// user := &USER8311{}
-	// user.Pads = "wwwww"
-	// user.IBD = 123414123
-	// user.KLaos = "wwwww"
-	// user.AKNIO = 123
-	// user.UUIB = 123411
-	// user.Tibick = 1
-	// user.FuckTime = time.Now()
-	// id, _ := orm.Insert(user)
-	// logs.Info("id:[%d]", id)
+	user := &USER8311{}
+	user.Pads = "wwwww"
+	user.IBD = 123414123
+	user.KLaos = "wwwww"
+	user.AKNIO = 123
+	user.UUIB = 123411
+	user.Tibick = 6
+	user.FuckTime = time.Now()
+	id, _ := orm.Insert(user)
+	logs.Info("id:[%d]", id)
 	// orm.Update(user)
 	// orm.Delete(user)
 

@@ -65,6 +65,7 @@ func createInsertSQL(tablename string, model *liborm.ModelTableInsertInfo) inter
 			}
 		case liborm.OrmTypeDateOnlyField:
 			{
+
 				timeStr := v.(time.Time).Format(TypeDateFormat)
 				if i < length-1 {
 					sql += fmt.Sprintf("\"%s\",", timeStr)
@@ -96,11 +97,14 @@ func createInsertSQL(tablename string, model *liborm.ModelTableInsertInfo) inter
 			}
 		case liborm.OrmTypeTimeStampField:
 			{
-				timeStamp := v.(time.Time).Unix()
+				currentTime := v.(time.Time)
+
+				timeStamp := currentTime.Format(TypeDateTimeFormat)
+
 				if i < length-1 {
-					sql += fmt.Sprintf("%d,", timeStamp)
+					sql += fmt.Sprintf("\"%s\",", timeStamp)
 				} else {
-					sql += fmt.Sprintf("%d", timeStamp)
+					sql += fmt.Sprintf("\"%s\"", timeStamp)
 				}
 			}
 		default:

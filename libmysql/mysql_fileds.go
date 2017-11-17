@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	TypeDateFormat     = "2006-01-01"
-	TypeTimeFormat     = "03:03:03"
-	TypeDateTimeFormat = "2006-01-01 03:03:03"
+	TypeDateFormat     = "2006-01-02"
+	TypeTimeFormat     = "15:04:05"
+	TypeDateTimeFormat = "2006-01-02 15:04:05"
 )
 
 const (

@@ -3,7 +3,6 @@ package libelasticsearch
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/olivere/elastic"
 	"github.com/olivere/elastic/config"
@@ -21,6 +20,7 @@ type Option struct {
 	Password string
 }
 
+// 新建es的client
 func New(option *Option) *Client {
 
 	config := &config.Config{}
@@ -44,7 +44,6 @@ func New(option *Option) *Client {
 		panic(err)
 	}
 
-	fmt.Printf("Elasticsearch returned with code %d and version %s\n", code, info.Version.Number)
 	return c
 }
 
@@ -85,12 +84,11 @@ func (c *Client) GetByType(index, logtype string) ([]*SearchHit, error) {
 
 	result, err := c.Client.Search().Index(index).Type(logtype).Do(c.ctx)
 	if err != nil {
-		fmt.Printf("err[%v] \n", err)
+
 		return nil, err
 	}
 
 	b, _ := json.Marshal(result)
 
-	fmt.Printf("Got document [%s]\n", string(b))
 	return result.Hits.Hits, nil
 }

@@ -24,7 +24,7 @@ func main() {
 	})
 
 	timerId1 := wheel.AddTask(time.Duration(1)*time.Second, -1, task1)
-	timerId2 := wheel.AddTask(time.Duration(3)*time.Second, -1, task2)
+	timerId2 := wheel.AddTask(time.Duration(5)*time.Second, -1, task2)
 
 	go delTimer(timerId1)
 	go delTimer(timerId2)
@@ -32,6 +32,7 @@ func main() {
 }
 
 func delTimer(timerId int64) {
+	return
 	//先过个5秒再删除
 	time.Sleep(time.Duration(timerId) * time.Second)
 	fmt.Printf("删除任务：%d\n", timerId)

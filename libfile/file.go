@@ -75,9 +75,19 @@ func FileExist(filename string) bool {
 	}
 	if fi.IsDir() {
 		return false
-	} else {
+	}
+	return true
+}
+
+func DirExist(filename string) bool {
+	fi, err := os.Stat(filename)
+	if err != nil {
+		return false
+	}
+	if fi.IsDir() {
 		return true
 	}
+	return false
 }
 
 func WalkDir(dirPth, suffix string) (files []string, err error) {

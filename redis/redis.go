@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/wuqifei/server_lib/logs"
+
 	"github.com/garyburd/redigo/redis"
 )
 
@@ -235,6 +237,16 @@ func (r *RedisPool) IsExists(key string) bool {
 		return false
 	}
 	return v
+}
+
+// 给redis的key，延长或者减少过期时间
+func (r *RedisPool) ExpireKey(key string, timeout time.Duration) bool {
+	_, err := r.DoRedis("Expire", key, int64(timeout/time.Second))
+	if err != nil {
+		logs.Error("redis expire key err [%v]", err)
+		return false
+	}
+	return true
 }
 
 // 指定自增key

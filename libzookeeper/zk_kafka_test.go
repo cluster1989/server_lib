@@ -12,6 +12,16 @@ var (
 	zkServers = []string{"127.0.0.1:2181", "127.0.0.1:2182", "127.0.0.1:2183"}
 )
 
+func TestWatcher(t *testing.T) {
+	option := &libzookeeper.Option{}
+	option.Addrs = zkServers
+	option.Timeout = time.Duration(2) * time.Second
+	zk, _ := libzookeeper.NewZK(option)
+	watcher := make(chan []string, 0)
+	zk.WatchChildren("brokers/ids", watcher)
+
+}
+
 func TestBrokers(t *testing.T) {
 	option := &libzookeeper.Option{}
 	option.Addrs = zkServers

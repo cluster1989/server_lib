@@ -139,6 +139,7 @@ func (z *ZooKeeper) MkdirRecursive(node string) (err error) {
 	root := fmt.Sprintf("%s%s", z.option.Chroot, node)
 	return z.mkdirRecursive(root)
 }
+
 func (z *ZooKeeper) mkdirRecursive(node string) (err error) {
 	parent := path.Dir(node)
 	if parent != "/" {
@@ -169,4 +170,52 @@ func (z *ZooKeeper) Create(node string, value []byte, ephemeral bool) (err error
 	}
 	_, err = z.conn.Create(root, value, flag, zk.WorldACL(zk.PermAll))
 	return
+}
+
+// 观察节点
+func (z *ZooKeeper) Watch(node string, vals chan<- []string) (err error) {
+	if node[0] != '/' {
+		node = "/" + node
+	}
+	// 真实节点
+	root := fmt.Sprintf("%s%s", z.option.Chroot, node)
+	children, _, childCh, err := z.conn.ChildrenW(root)
+	if err != nil {
+		return err
+	}
+	select {
+	case childEvent := <-childCh:
+		// 节点变化
+		if childEvent.Type == zk.EventNodeCreated ||
+			childEvent.Type == zk.EventNodeDeleted {
+
+			// 节点变化，需要同步给上层知道
+			vals <- children
+		}
+	}
+	return nil
+}
+
+// 观察某个节点children
+func (z *ZooKeeper) WatchChildren(node string, vals chan<- []string) (err error) {
+	if node[0] != '/' {
+		node = "/" + node
+	}
+	// 真实节点
+	root := fmt.Sprintf("%s%s", z.option.Chroot, node)
+	children, _, childCh, err := z.conn.ChildrenW(root)
+	if err != nil {
+		return err
+	}
+	select {
+	case childEvent := <-childCh:
+		// children节点变化
+		if childEvent.Type == zk.EventNodeDataChanged ||
+			childEvent.Type == zk.EventNodeChildrenChanged {
+
+			// 节点变化，需要同步给上层知道
+			vals <- children
+		}
+	}
+	return nil
 }

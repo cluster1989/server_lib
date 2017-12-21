@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	// go producer()
+	go producer()
 	consumer()
 
 	signal.InitSignal()
@@ -46,7 +46,7 @@ func consumer() {
 	option.Group = "1251"
 	option.LatestOffset = false //olddest1
 	option.Topics = []string{"golangtest2"}
-	option.NotHighLevel = true
+	option.NotHighLevel = false
 	msgchan := make(chan *sarama.ConsumerMessage, 0)
 
 	c := libkafka2.NewConsumer(option)

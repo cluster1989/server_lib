@@ -66,6 +66,8 @@ func (p *Producer) asyncDial() (err error) {
 	config.Producer.RequiredAcks = sarama.WaitForLocal       // Only wait for the leader to ack
 	config.Producer.Compression = sarama.CompressionSnappy   // Compress messages
 	config.Producer.Flush.Frequency = 500 * time.Millisecond // Flush batches every 500ms
+	config.Producer.Return.Successes = true
+	config.Producer.Return.Errors = true
 
 	if p.asyncProducer, err = sarama.NewAsyncProducer(p.brokers, config); err == nil {
 		logs.Info("kafka producer succeed on ")

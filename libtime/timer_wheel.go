@@ -53,6 +53,7 @@ func (w *TimerWheel) Size() int {
 	return <-w.sizeChan
 }
 
+// 关闭timer，关闭时候，使用这个方法
 func (w *TimerWheel) CancelTimer(id int64) {
 	w.cancelChan <- id
 }

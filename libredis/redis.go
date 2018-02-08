@@ -1,7 +1,8 @@
-package redis
+package libredis
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/wuqifei/server_lib/logs"
@@ -120,7 +121,7 @@ func (r *RedisPool) GetValue(key string) interface{} {
 }
 
 // 通过hget方式获取value
-func (r *RedisPool) Hget(key string, field interface{}) interface{} {
+func (r *RedisPool) HGet(key string, field interface{}) interface{} {
 	if v, err := r.DoRedis("HGET", key, field); err == nil {
 		return v
 	}
@@ -160,7 +161,7 @@ ERROR:
 }
 
 // 通过hget方式，获得多值
-func (r *RedisPool) MultiHget(key string, fields []interface{}) []interface{} {
+func (r *RedisPool) MultiHGet(key string, fields []interface{}) []interface{} {
 	size := len(fields)
 	var rv []interface{}
 	conn := r.Get()
@@ -192,7 +193,7 @@ ERROR:
 }
 
 // HSET redis
-func (r *RedisPool) Hset(key string, field interface{}, val interface{}) error {
+func (r *RedisPool) HSet(key string, field interface{}, val interface{}) error {
 	if _, err := r.DoRedis("HSET", key, field, val); err != nil {
 		return err
 	}
@@ -259,4 +260,35 @@ func (r *RedisPool) Incr(key string) error {
 func (r *RedisPool) Decr(key string) error {
 	_, err := redis.Bool(r.DoRedis("INCRBY", key, -1))
 	return err
+}
+
+// redis hmset
+func (r *RedisPool) HMSet(key string, args ...interface{}) error {
+
+	rArgs := make(redis.Args, 0)
+	rArgs = append(rArgs, key)
+	rArgs = append(rArgs, args...)
+
+	if _, err := r.DoRedis("HMSET", rArgs...); err != nil {
+		return err
+	}
+	return nil
+}
+
+// redis hmget
+func (r *RedisPool) HGETALL(key string) (map[string]string, error) {
+	reply, err := r.DoRedis("HGETALL", key)
+	if err != nil {
+		return nil, err
+	}
+	arr := reply.([]interface{})
+	m := make(map[string]string)
+	for i := 0; i < len(arr); i = i + 2 {
+		key := arr[i].([]uint8)
+		val := arr[i+1].([]uint8)
+		m[string(key)] = string(val)
+
+		fmt.Printf("key:[%s] val[%s]\n", key, val)
+	}
+	return m, nil
 }

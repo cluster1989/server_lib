@@ -1,4 +1,4 @@
-package redis
+package libredis
 
 import (
 	"fmt"
@@ -44,10 +44,10 @@ func Test_set(t *testing.T) {
 
 func Test_Hsetget(t *testing.T) {
 	cache := NewCache(&redisCfg)
-	if err := cache.Hset("name", "nick", "wuqifei"); err != nil {
+	if err := cache.HSet("name", "nick", "wuqifei"); err != nil {
 		t.Error(err)
 	}
-	val := cache.Hget("name", "luck")
+	val := cache.HGet("name", "luck")
 	printRedisVal(val)
 
 }
@@ -107,7 +107,19 @@ func Test_Trans(t *testing.T) {
 		t.Error(err)
 	}
 
-	val := cache.Hget("test1", "age")
+	val := cache.HGet("test1", "age")
 	printRedisVal(val)
+
+}
+
+func Test_HMOption(t *testing.T) {
+	cache := NewCache(&redisCfg)
+	if err := cache.HMSet("tes1tkey1", "abc", "123", "bas", "234"); err != nil {
+		t.Error(err)
+	}
+
+	if _, err := cache.HGETALL("tes1tkey1"); err != nil {
+		t.Error(err)
+	}
 
 }

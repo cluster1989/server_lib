@@ -2,7 +2,6 @@ package libredis
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/wuqifei/server_lib/logs"
@@ -276,19 +275,17 @@ func (r *RedisPool) HMSet(key string, args ...interface{}) error {
 }
 
 // redis hmget
-func (r *RedisPool) HGETALL(key string) (map[string]string, error) {
+func (r *RedisPool) HGETALL(key string) (map[string]interface{}, error) {
 	reply, err := r.DoRedis("HGETALL", key)
 	if err != nil {
 		return nil, err
 	}
 	arr := reply.([]interface{})
-	m := make(map[string]string)
+	m := make(map[string]interface{})
 	for i := 0; i < len(arr); i = i + 2 {
 		key := arr[i].([]uint8)
 		val := arr[i+1].([]uint8)
-		m[string(key)] = string(val)
-
-		fmt.Printf("key:[%s] val[%s]\n", key, val)
+		m[string(key)] = val
 	}
 	return m, nil
 }

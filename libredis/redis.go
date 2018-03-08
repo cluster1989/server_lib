@@ -2,7 +2,6 @@ package libredis
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/wuqifei/server_lib/logs"
@@ -288,7 +287,7 @@ func (r *RedisPool) HGETALL(key string) (map[string]interface{}, error) {
 		val := arr[i+1].([]uint8)
 		m[string(key)] = val
 
-		fmt.Printf("key:[%s] val[%s]\n", key, val)
+		logs.Debug("key:[%s] val[%s]\n", key, val)
 	}
 	return m, nil
 }

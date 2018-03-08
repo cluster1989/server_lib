@@ -39,7 +39,7 @@ func New(option *Option) *Client {
 	c.Client = client
 	c.ctx = context.Background()
 
-	info, code, err := client.Ping(config.URL).Do(c.ctx)
+	_, _, err = client.Ping(config.URL).Do(c.ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -80,7 +80,7 @@ func (c *Client) PutValue(index, logtype, id string, val interface{}) error {
 	return err
 }
 
-func (c *Client) GetByType(index, logtype string) ([]*SearchHit, error) {
+func (c *Client) GetByType(index, logtype string) ([]*elastic.SearchHit, error) {
 
 	result, err := c.Client.Search().Index(index).Type(logtype).Do(c.ctx)
 	if err != nil {
@@ -88,7 +88,7 @@ func (c *Client) GetByType(index, logtype string) ([]*SearchHit, error) {
 		return nil, err
 	}
 
-	b, _ := json.Marshal(result)
+	// b, _ := json.Marshal(result)
 
 	return result.Hits.Hits, nil
 }

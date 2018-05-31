@@ -1,10 +1,10 @@
-package libio
+package tcp_server
 
 import (
 	"errors"
 	"io"
 
-	"github.com/wuqifei/server_lib/libnet/def"
+	"github.com/wuqifei/server_lib/libio"
 )
 
 var (
@@ -38,21 +38,22 @@ func New(isLittleIndian bool, maxRecvBufferSize, maxSendBufferSize int) *ProtoCo
 
 type protoCodec struct {
 	p      *ProtoCodec
-	w      *Writer
-	r      *Reader
+	w      *libio.Writer
+	r      *libio.Reader
 	closer io.Closer
 }
 
-func (j *ProtoCodec) NewConn(rw io.ReadWriter) def.Conn {
+func (j *ProtoCodec) NewConn(rw io.ReadWriter) *protoCodec {
 	codec := &protoCodec{}
 	codec.p = j
-	codec.w = NewWriter(rw)
-	codec.r = NewReader(rw)
+	codec.w = libio.NewWriter(rw)
+	codec.r = libio.NewReader(rw)
 	codec.closer, _ = rw.(io.Closer)
 	return codec
 }
 func (c *protoCodec) Receive() ([]byte, error) {
-	data, err := c.r.ReadPacket(&c.p.analyseHandle)
+	data, err := c.ReadPacket(&c.p.analyseHandle)
+
 	return data, err
 }
 
@@ -61,8 +62,17 @@ func (c *protoCodec) Send(msg interface{}) error {
 		return CodecSendMsgNilError
 	}
 	data := msg.([]byte)
-	err := c.w.WritePacket(data, &c.p.analyseHandle)
+	err := c.WritePacket(data, &c.p.analyseHandle)
 	return err
+}
+
+func (c *protoCodec) WritePacket(b []byte, spliter *PacketSpliter) error {
+
+	return spliter.Write(c.w, b)
+}
+
+func (c *protoCodec) ReadPacket(spliter *PacketSpliter) (b []byte, err error) {
+	return spliter.Read(c.r)
 }
 
 func (c *protoCodec) Close() error {

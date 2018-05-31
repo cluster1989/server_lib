@@ -35,13 +35,6 @@ func (r *Reader) Read(b []byte) (n int, err error) {
 	return
 }
 
-func (r *Reader) ReadPacket(spliter *PacketSpliter) (b []byte, err error) {
-	if r.err == nil {
-		b, err = spliter.Read(r)
-	}
-	return
-}
-
 func (r *Reader) ReadBytes(n int) (b []byte) {
 	b = make([]byte, n)
 	_, r.err = io.ReadFull(r, b)

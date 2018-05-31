@@ -1,8 +1,10 @@
-package libio
+package tcp_server
 
 import (
 	"errors"
 	"io"
+
+	"github.com/wuqifei/server_lib/libio"
 )
 
 var (
@@ -10,8 +12,8 @@ var (
 	CodecMsgRecvBufferTooLong = errors.New("msg recv buffer too long")
 )
 
-type HeadReadHandle func(r *Reader) int
-type HeadWriteHandle func(w *Writer, l int)
+type HeadReadHandle func(r *libio.Reader) int
+type HeadWriteHandle func(w *libio.Writer, l int)
 
 type PacketSpliter struct {
 	ReadHead  HeadReadHandle
@@ -24,7 +26,7 @@ type PacketSpliter struct {
 	MaxSendBufferSize int
 }
 
-func (p *PacketSpliter) Read(r *Reader) ([]byte, error) {
+func (p *PacketSpliter) Read(r *libio.Reader) ([]byte, error) {
 	n := p.ReadHead(r)
 	//这里如果，字节树过长
 
@@ -41,7 +43,7 @@ func (p *PacketSpliter) Read(r *Reader) ([]byte, error) {
 	return b, nil
 }
 
-func (p *PacketSpliter) Write(w *Writer, b []byte) error {
+func (p *PacketSpliter) Write(w *libio.Writer, b []byte) error {
 	length := len(b)
 	if length > p.MaxSendBufferSize {
 		return CodecMsgSendBufferTooLong
@@ -55,18 +57,18 @@ func (p *PacketSpliter) Write(w *Writer, b []byte) error {
 	return nil
 }
 
-func (p *PacketSpliter) Limit(r *Reader) *io.LimitedReader {
+func (p *PacketSpliter) Limit(r *libio.Reader) *io.LimitedReader {
 	n := p.ReadHead(r)
 	return &io.LimitedReader{r, int64(n)}
 }
 
 var (
 	SplitByUint16BE = PacketSpliter{
-		ReadHead:  func(r *Reader) int { return int(r.ReadUint16BE()) },
-		WriteHead: func(w *Writer, l int) { w.WriteUint16BE(uint16(l)) },
+		ReadHead:  func(r *libio.Reader) int { return int(r.ReadUint16BE()) },
+		WriteHead: func(w *libio.Writer, l int) { w.WriteUint16BE(uint16(l)) },
 	}
 	SplitByUint16LE = PacketSpliter{
-		ReadHead:  func(r *Reader) int { return int(r.ReadUint16LE()) },
-		WriteHead: func(w *Writer, l int) { w.WriteUint16LE(uint16(l)) },
+		ReadHead:  func(r *libio.Reader) int { return int(r.ReadUint16LE()) },
+		WriteHead: func(w *libio.Writer, l int) { w.WriteUint16LE(uint16(l)) },
 	}
 )

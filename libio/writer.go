@@ -27,13 +27,6 @@ func (writer *Writer) Write(b []byte) (n int, err error) {
 	return
 }
 
-func (writer *Writer) WritePacket(b []byte, spliter *PacketSpliter) error {
-	if writer.err != nil {
-		return writer.err
-	}
-	return spliter.Write(writer, b)
-}
-
 func (writer *Writer) WriteBytes(b []byte) {
 	writer.Write(b)
 }

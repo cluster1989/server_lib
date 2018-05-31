@@ -19,6 +19,7 @@ type ConcurrentIDGroupMap struct {
 	disposeFlag bool
 	disposeOnce sync.Once
 	disposeWait sync.WaitGroup
+	count       int32
 }
 
 // 新建一个map
@@ -57,6 +58,7 @@ func (g *ConcurrentIDGroupMap) Dispose() {
 
 			syncIDMap.Unlock()
 		}
+		g.count = 0
 		// 执行阻塞，直到所有都释放了
 		g.disposeWait.Wait()
 	})
@@ -76,6 +78,7 @@ func (g *ConcurrentIDGroupMap) Set(id uint64, item interface{}) {
 	defer syncIDMap.Unlock()
 	syncIDMap.Items[id] = item
 	g.disposeWait.Add(1)
+	g.count++
 }
 
 func (g *ConcurrentIDGroupMap) Del(id uint64) {
@@ -87,6 +90,11 @@ func (g *ConcurrentIDGroupMap) Del(id uint64) {
 	syncIDMap.Lock()
 	defer syncIDMap.Unlock()
 	delete(syncIDMap.Items, id)
-	//-1
+
 	g.disposeWait.Done()
+	g.count--
+}
+
+func (g *ConcurrentIDGroupMap) Count() int32 {
+	return g.count
 }

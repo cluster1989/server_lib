@@ -139,3 +139,26 @@ func Test_SET(t *testing.T) {
 	t.Log(val)
 
 }
+
+func Test_ZSET(t *testing.T) {
+	cache := NewCache(&redisCfg)
+	err := cache.ZADD("test123", 8, "test212")
+	if err != nil {
+		t.Error(err)
+	}
+	val, err := cache.ZCARD("test123")
+	if err != nil {
+		t.Error(err)
+	}
+
+	vals, err := cache.ZRangeByScoreCARD("test123", 2, 8)
+
+	if err != nil {
+
+		t.Error(err)
+	}
+
+	vals, err = cache.ZRANGE("test123", 0, 2)
+	t.Log(val)
+	t.Log(vals)
+}

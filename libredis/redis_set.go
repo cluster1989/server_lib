@@ -43,7 +43,6 @@ func (r *RedisPool) SMembers(groupName string) ([]string, error) {
 		key := arr[i].([]uint8)
 		keyByte := []byte(key)
 		m = append(m, string(keyByte))
-
 	}
-	return nil, nil
+	return m, nil
 }

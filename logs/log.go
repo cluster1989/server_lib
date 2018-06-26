@@ -545,10 +545,10 @@ func EnableFuncCallDepth(b bool) {
 	libLogger.enableFuncCallDepth = b
 }
 
-// SetLogFuncCall set the CallDepth, default is 4
+// SetLogFuncCall set the CallDepth, default is 3
 func SetLogFuncCall(b bool) {
 	libLogger.EnableFuncCallDepth(b)
-	libLogger.SetLogFuncCallDepth(4)
+	libLogger.SetLogFuncCallDepth(3)
 }
 
 // SetLogFuncCallDepth set log funcCallDepth

@@ -20,7 +20,7 @@ var redisCfg = Options{
 	DbNum:              3,
 }
 
-func Test_set(t *testing.T) {
+func Test_setVAL(t *testing.T) {
 	cache := NewCache(&redisCfg)
 	time.Sleep(3)
 	if err := cache.Setex("name777", "nick", time.Duration(30)*time.Second); err != nil {
@@ -121,5 +121,21 @@ func Test_HMOption(t *testing.T) {
 	if _, err := cache.HGETALL("tes1tkey1"); err != nil {
 		t.Error(err)
 	}
+
+}
+
+func Test_SET(t *testing.T) {
+
+	cache := NewCache(&redisCfg)
+	err := cache.SAdd("test", "test1", "test2")
+	if err != nil {
+		t.Error(err)
+	}
+	val, err := cache.SMembers("test")
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Log(val)
 
 }

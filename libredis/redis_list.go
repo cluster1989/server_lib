@@ -19,7 +19,7 @@ func (r *RedisPool) LRange(groupName string, page, num int) ([]string, error) {
 	rArgs := make(redis.Args, 0)
 	rArgs = append(rArgs, groupName)
 	rArgs = append(rArgs, page*num)
-	rArgs = append(rArgs, page*(num+1)-1)
+	rArgs = append(rArgs, (page+1)*num-1)
 
 	reply, err := r.DoRedis("LRANGE", rArgs...)
 	if err != nil {

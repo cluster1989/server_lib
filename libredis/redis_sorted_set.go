@@ -2,6 +2,7 @@ package libredis
 
 import (
 	"github.com/garyburd/redigo/redis"
+	"github.com/wuqifei/server_lib/libio"
 )
 
 // redis zadd
@@ -107,3 +108,22 @@ func (r *RedisPool) ZREVRANGE(groupName string, start, end int) ([]string, error
 	}
 	return m, nil
 } //ZREVRANGE
+
+func (r *RedisPool) ZSCORE(groupName, member string) (int, error) {
+	rArgs := make(redis.Args, 0)
+	rArgs = append(rArgs, groupName)
+	rArgs = append(rArgs, member)
+	reply, err := r.DoRedis("ZSCORE", rArgs...)
+	if err != nil {
+		return 0, err
+	}
+
+	if reply == nil {
+		return 0, nil
+	}
+	val := reply.([]uint8)
+	valStr := string([]byte(val))
+
+	convert := libio.NewConvert(valStr)
+	return convert.Int()
+}

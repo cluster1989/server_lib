@@ -16,12 +16,12 @@ func (j *JobTest) DoJobTask() error {
 	return nil
 }
 
-func TestDispatcher(t *testing.T) {
-
-	dispatcher := libdispatcher.New(2, 10)
-	for i := 0; i < 100; i++ {
-		j := new(JobTest)
-		j.Num = uint(i)
+func BenckmarkDispatcher(b *testing.B) {
+	dispatcher := libdispatcher.New(4, 10)
+	for i := 0; i < b.N; i++ {
+		j := &JobTest{
+			Num: uint(i),
+		}
 		dispatcher.Job.Enqueue(j)
 	}
 }

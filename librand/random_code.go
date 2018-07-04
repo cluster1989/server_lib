@@ -25,9 +25,9 @@ func init() {
 	RandomLowerCaseItem = []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
 }
 
-// 创建随机码
+// 创建l个大写随机码
 func CreateUpperRandomCode(l int) string {
-	// 8位的随机
+
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	length := len(RandomUpperCaseItem)
 	arr := make([]string, 0)
@@ -41,9 +41,9 @@ func CreateUpperRandomCode(l int) string {
 	}
 }
 
-// 创建随机码
+// 创建l个小写随机码
 func CreateLowerRandomCode(l int) string {
-	// 8位的随机
+
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	length := len(RandomLowerCaseItem)
 	arr := make([]string, 0)
@@ -57,9 +57,9 @@ func CreateLowerRandomCode(l int) string {
 	}
 }
 
-// 创建随机码
+// 创建l个大写以及数字随机码
 func CreateUpperNumRandomCode(l int) string {
-	// 8位的随机
+
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	lengthUpper := len(RandomUpperCaseItem)
 	lengthNum := len(RandomNumItem)
@@ -67,7 +67,7 @@ func CreateUpperNumRandomCode(l int) string {
 	for {
 		index := rnd.Intn(lengthNum + lengthUpper)
 		if index < lengthUpper {
-			// 正常的选择
+
 			arr = append(arr, RandomUpperCaseItem[index])
 		} else {
 			arr = append(arr, RandomNumItem[index-lengthUpper])
@@ -79,9 +79,9 @@ func CreateUpperNumRandomCode(l int) string {
 	}
 }
 
-// 创建随机码
+//  创建l个小写以及数字随机码
 func CreateLowerNumRandomCode(l int) string {
-	// 8位的随机
+
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	lengthLower := len(RandomLowerCaseItem)
 	lengthNum := len(RandomNumItem)
@@ -89,7 +89,7 @@ func CreateLowerNumRandomCode(l int) string {
 	for {
 		index := rnd.Intn(lengthNum + lengthLower)
 		if index < lengthLower {
-			// 正常的选择
+
 			arr = append(arr, RandomLowerCaseItem[index])
 		} else {
 			arr = append(arr, RandomNumItem[index-lengthLower])
@@ -101,9 +101,9 @@ func CreateLowerNumRandomCode(l int) string {
 	}
 }
 
-// 创建随机码
+// 创建l个小写大写以及数字随机码
 func CreateASCIIRandomCode(l int) string {
-	// 8位的随机
+
 	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 	lengthUpper := len(RandomUpperCaseItem)
 	lengthLower := len(RandomLowerCaseItem)
@@ -112,7 +112,7 @@ func CreateASCIIRandomCode(l int) string {
 	for {
 		index := rnd.Intn(lengthNum + lengthUpper + lengthLower)
 		if index < lengthUpper {
-			// 正常的选择
+
 			arr = append(arr, RandomUpperCaseItem[index])
 		} else if index < lengthUpper+lengthLower {
 			arr = append(arr, RandomLowerCaseItem[index-lengthUpper])
@@ -120,6 +120,20 @@ func CreateASCIIRandomCode(l int) string {
 			arr = append(arr, RandomNumItem[index-lengthUpper-lengthLower])
 		}
 
+		if len(arr) == l {
+			return strings.Join(arr, "")
+		}
+	}
+}
+
+// 创建l个数字随机码
+func CreateNumRandomCode(l int) string {
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	lengthNum := len(RandomNumItem)
+	arr := make([]string, 0)
+	for {
+		index := rnd.Intn(lengthNum)
+		arr = append(arr, RandomNumItem[index])
 		if len(arr) == l {
 			return strings.Join(arr, "")
 		}

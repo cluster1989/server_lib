@@ -25,6 +25,7 @@ func TestLogsMutifile(t *testing.T) {
 	logs2.DefaultLogger().Register("mutifile", m, logs_plugin.NewFilesWriter())
 	logs2.DefaultLogger().SetDefaultLevel(logs2.LogLevelDebug)
 	logs2.DefaultLogger().Async(3, 100)
+
 	logs2.Debug("test 12341")
 	logs2.Debug("test 12342")
 	logs2.Debug("test 12343")

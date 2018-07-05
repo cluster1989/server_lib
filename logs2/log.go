@@ -23,6 +23,8 @@ type Logger2 interface {
 
 var defaultLogMsgPool *sync.Pool
 
+var levelPrefix = [LogLevelDebug + 1]string{"[M] ", "[C] ", "[E] ", "[W] ", "[I] ", "[D] "}
+
 // 日志服务的实体类
 type LibLogger struct {
 	// 锁
@@ -150,22 +152,13 @@ func (l *LibLogger) writeMsg(logLevel int, msg string, v ...interface{}) error {
 		msg = fmt.Sprintf(msg, v...)
 	}
 
-	when := time.Now()
-	if l.enableFuncCall {
-		_, file, line, ok := runtime.Caller(l.funcCallDepth)
-		if !ok {
-			file = "???"
-			line = 0
-		}
-		_, filename := path.Split(file)
-
-		msg = fmt.Sprintf("[%s:%d] %s", filename, line, msg)
-	}
-
 	// 小于这个等级的才可以打印
 	if logLevel > l.level {
 		return nil
 	}
+
+	when := time.Now()
+	msg = l.formatMsg(when, msg, logLevel)
 
 	if l.async {
 		lm := defaultLogMsgPool.Get().(*DefaultLoggerMsg)
@@ -180,14 +173,33 @@ func (l *LibLogger) writeMsg(logLevel int, msg string, v ...interface{}) error {
 	return nil
 }
 
+func (l *LibLogger) formatMsg(when time.Time, msg string, level int) string {
+
+	if l.enableFuncCall {
+		_, file, line, ok := runtime.Caller(l.funcCallDepth)
+		if !ok {
+			file = "???"
+			line = 0
+		}
+		_, filename := path.Split(file)
+
+		msg = fmt.Sprintf("[%s:%d] %s", filename, line, msg)
+	}
+
+	if level <= LogLevelDebug {
+		msg = levelPrefix[level-1] + msg
+	}
+
+	return msg
+}
+
 // 写消息
 func (l *LibLogger) WriteMsg(msg LoggerMsg) error {
-	l.writeMsg(msg.Level(), msg.Msg(), msg.When())
-
 	if l.async {
 		l.msgChan <- msg
 	} else {
-		l.write2Logger(msg.When(), msg.Msg(), msg.Level())
+		str := l.formatMsg(msg.When(), msg.Msg(), msg.Level())
+		l.write2Logger(msg.When(), str, msg.Level())
 	}
 
 	return nil

@@ -79,14 +79,16 @@ func (w *FileLogWriter) Init(jsonConfig interface{}) error {
 	if conf == nil {
 		return nil
 	}
-	w.Filename = conf.Filename
+
 	w.MaxLines = conf.MaxLines
 	w.MaxSize = conf.MaxSize
 	w.Daily = conf.Daily
 	w.MaxDays = conf.MaxDays
 	w.Rotate = conf.Rotate
-	w.RotatePerm = conf.RotatePerm
+	w.Level = conf.Level
 	w.Perm = conf.Perm
+	w.RotatePerm = conf.RotatePerm
+	w.Filename = conf.Filename
 
 	if len(w.Filename) == 0 {
 		return errors.New("jsonconfig must have filename")

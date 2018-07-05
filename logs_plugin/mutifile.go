@@ -70,10 +70,13 @@ func (f *MultiFileLogWriter) WriteMsg(when time.Time, msg string, level int) err
 	if f.FullLogWriter != nil {
 		f.FullLogWriter.WriteMsg(when, msg, level)
 	}
-	for i := 0; i < len(f.writers)-1; i++ {
-		if f.writers[i] != nil {
-			if level == f.writers[i].Level {
-				f.writers[i].WriteMsg(when, msg, level)
+
+	len := len(f.writers) - 1
+	for i := 0; i < len; i++ {
+		writer := f.writers[i]
+		if writer != nil {
+			if level == writer.Level {
+				writer.WriteMsg(when, msg, level)
 			}
 		}
 	}

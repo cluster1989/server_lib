@@ -2,7 +2,8 @@ package logs_plugin_test
 
 import (
 	"testing"
-	//180704102637
+	"time"
+
 	"github.com/wuqifei/server_lib/logs2"
 	"github.com/wuqifei/server_lib/logs_plugin"
 )
@@ -23,5 +24,11 @@ func TestLogsMutifile(t *testing.T) {
 
 	logs2.DefaultLogger().Register("mutifile", m, logs_plugin.NewFilesWriter())
 	logs2.DefaultLogger().SetDefaultLevel(logs2.LogLevelDebug)
-	logs2.Debug("test 1234")
+	logs2.DefaultLogger().Async(3, 100)
+	logs2.Debug("test 12341")
+	logs2.Debug("test 12342")
+	logs2.Debug("test 12343")
+	logs2.Debug("test 12344")
+
+	time.Sleep(time.Second * time.Duration(20))
 }

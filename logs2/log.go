@@ -23,9 +23,6 @@ type Logger2 interface {
 
 var defaultLogMsgPool *sync.Pool
 
-// 懒加载的日志接口方法
-type LazzyLoadLoggerFunc func() Logger2
-
 // 日志服务的实体类
 type LibLogger struct {
 	// 锁
@@ -51,7 +48,7 @@ type LibLogger struct {
 	signalChan chan int
 
 	// 所有的注册的日志
-	adapters map[string]LazzyLoadLoggerFunc
+	adapters map[string]Logger2
 
 	// 默认的等级
 	defaultLevel int
@@ -62,12 +59,13 @@ const defaultAsyncMsgLen = 1e3
 // 初始化一个日志服务
 func New() *LibLogger {
 	l := new(LibLogger)
+	l.Mutex = new(sync.Mutex)
 	// 默认是同步
 	l.async = false
 	// 从最低等级开始记录
 	l.level = LogLevelDebug
-	l.adapters = make(map[string]LazzyLoadLoggerFunc)
-	l.funcCallDepth = 4
+	l.adapters = make(map[string]Logger2)
+	l.funcCallDepth = 3
 	l.enableFuncCall = true
 	l.signalChan = make(chan int, 1)
 	l.defaultLevel = LogLevelInfo
@@ -75,7 +73,7 @@ func New() *LibLogger {
 }
 
 // 注册一个日志的服务
-func (l *LibLogger) Register(name string, config interface{}, log LazzyLoadLoggerFunc) error {
+func (l *LibLogger) Register(name string, config interface{}, log Logger2) error {
 	l.Lock()
 	defer l.Unlock()
 	if log == nil {
@@ -84,10 +82,10 @@ func (l *LibLogger) Register(name string, config interface{}, log LazzyLoadLogge
 
 	// 如果已经注册，直接返回错误
 	if _, adapater := l.adapters[name]; adapater {
-		panic(fmt.Errorf("logs2 :register is log is registed [%s]", name))
+		return fmt.Errorf("logs2 :register is log is registed [%s]", name)
 	}
 	// 初始化
-	if err := log().Init(config); err != nil {
+	if err := log.Init(config); err != nil {
 		return err
 	}
 
@@ -102,7 +100,7 @@ func (l *LibLogger) DelLogger(name string) error {
 	// 找到日志
 	adapter := l.adapters[name]
 	// 友善的清理
-	adapter().Destroy()
+	adapter.Destroy()
 	// 删除
 	delete(l.adapters, name)
 	return nil
@@ -140,7 +138,7 @@ func (l *LibLogger) Async(worker, chanSize int) *LibLogger {
 
 func (l *LibLogger) write2Logger(when time.Time, msg string, level int) {
 	for name, adapter := range l.adapters {
-		err := adapter().WriteMsg(when, msg, level)
+		err := adapter.WriteMsg(when, msg, level)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to write to [%s], error:[%v]", name, err)
 		}
@@ -224,7 +222,7 @@ func (l *LibLogger) asyncLogger() {
 			l.flush()
 			if sg == LoggerSignalClose {
 				for _, adapter := range l.adapters {
-					adapter().Destroy()
+					adapter.Destroy()
 				}
 				l.adapters = nil
 				flag = true
@@ -263,7 +261,7 @@ func (l *LibLogger) Close() error {
 func (l *LibLogger) Reset() {
 	l.Flush()
 	for _, adapter := range l.adapters {
-		adapter().Destroy()
+		adapter.Destroy()
 	}
 	l.adapters = nil
 }
@@ -282,7 +280,7 @@ func (l *LibLogger) flush() {
 	}
 
 	for _, adapter := range l.adapters {
-		adapter().Flush()
+		adapter.Flush()
 	}
 }
 

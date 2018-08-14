@@ -1,11 +1,18 @@
 package libdispatcher
 
-import "github.com/wuqifei/server_lib/logs"
+import (
+	"sync"
+
+	"github.com/wuqifei/server_lib/concurrent"
+	"github.com/wuqifei/server_lib/logs"
+)
 
 type Worker struct {
-	WorkerPool chan chan Job
-	JobChannel chan Job
-	quit       chan bool
+	WorkerPool  chan chan Job
+	JobChannel  chan Job
+	quit        chan bool
+	disposeOnce sync.Once
+	closeFlag   *concurrent.AtomicBoolean
 }
 
 func NewWorker(workerPool chan chan Job) *Worker {
@@ -13,6 +20,7 @@ func NewWorker(workerPool chan chan Job) *Worker {
 		WorkerPool: workerPool,
 		JobChannel: make(chan Job),
 		quit:       make(chan bool),
+		closeFlag:  concurrent.NewAtomicBoolean(false),
 	}
 }
 
@@ -29,14 +37,25 @@ func (w *Worker) Start() {
 					logs.Error("job  task went wrong [%v]", err)
 				}
 			case <-w.quit:
+				w.close()
 				return
 			}
 		}
 	}()
 }
 
-func (w *Worker) Stop() {
-	go func() {
+func (w *Worker) close() {
+	w.closeFlag.Set(true)
+	w.disposeOnce.Do(func() {
+		close(w.quit)
+		close(w.WorkerPool)
+		close(w.JobChannel)
+	})
+}
+
+func (w *Worker) Close() error {
+	if w.closeFlag.Get() {
 		w.quit <- true
-	}()
+	}
+	return nil
 }

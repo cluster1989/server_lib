@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/samuel/go-zookeeper/zk"
-	"github.com/wuqifei/server_lib/logs"
 )
 
 var (
@@ -144,7 +143,7 @@ func (cg *ConsumerGroup) WatchInstances() (ConsumerGroupInstanceList, <-chan zk.
 	result := make(ConsumerGroupInstanceList, 0)
 
 	for _, child := range children {
-		logs.Debug("registerd instance ID:%s len[%d]", child, len(children))
+		fmt.Printf("[Debug]registerd instance ID:%s len[%d]\n", child, len(children))
 		instance := cg.Instance(child)
 		result = append(result, instance)
 	}

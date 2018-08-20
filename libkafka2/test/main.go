@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	go producer()
+	// go producer()
 	consumer()
 
 	signal.InitSignal()

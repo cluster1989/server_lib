@@ -1,13 +1,13 @@
 package libkafka2
 
 import (
+	"fmt"
 	"runtime"
 	"time"
 
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
 	"github.com/wuqifei/server_lib/libzookeeper"
-	"github.com/wuqifei/server_lib/logs"
 )
 
 type ConsumerOption struct {
@@ -93,10 +93,10 @@ func (c *Consumer) reNewKafka() {
 
 	go watchBrokers(c.zk, c.watcher)
 	if err := c.dial(); err != nil {
-		logs.Error("redial zk: ", err)
+		fmt.Printf("[Error]redial zk: [%v]\n", err)
 		go c.redial()
 	} else {
-		logs.Info("already connect kafka")
+		fmt.Printf("[Info]already connect kafka\n")
 	}
 	go c.runConsumer()
 }
@@ -115,10 +115,10 @@ func (c *Consumer) redial() {
 	var err error
 	for {
 		if err = c.dial(); err == nil {
-			logs.Info("kafka retry new consumer ok")
+			fmt.Printf("[Info]kafka retry new consumer ok\n")
 			return
 		}
-		logs.Error("dial kafka consumer error: ", err)
+		fmt.Printf("[Error]dial kafka consumer error: [%v]\n", err)
 		time.Sleep(time.Second)
 	}
 }
@@ -135,7 +135,7 @@ func (c *Consumer) runConsumer() {
 		case ntf := <-c.Consumer.Notifications():
 			{
 
-				logs.Info("kafka consumer reblance [%v]", ntf)
+				fmt.Printf("[Info]kafka consumer reblance [%v]\n", ntf)
 
 			}
 		case msg, ok := <-c.Consumer.Messages():

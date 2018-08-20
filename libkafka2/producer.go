@@ -8,7 +8,6 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/wuqifei/server_lib/libzookeeper"
-	"github.com/wuqifei/server_lib/logs"
 )
 
 var (
@@ -70,7 +69,7 @@ func (p *Producer) asyncDial() (err error) {
 	config.Producer.Return.Errors = true
 
 	if p.asyncProducer, err = sarama.NewAsyncProducer(p.brokers, config); err == nil {
-		logs.Info("kafka producer succeed on ")
+		fmt.Printf("[Info]kafka producer succeed on \n")
 		go p.runProducer()
 	}
 	return
@@ -80,10 +79,10 @@ func (p *Producer) reAsyncDial() {
 	var err error
 	for {
 		if err = p.asyncDial(); err == nil {
-			logs.Info("kafka retry new async producer ok")
+			fmt.Printf("kafka retry new async producer ok\n")
 			return
 		}
-		logs.Error("dial kafka producer error: ", err)
+		fmt.Printf("dial kafka producer error:[%v] \n", err)
 		time.Sleep(time.Second)
 	}
 }
@@ -108,7 +107,7 @@ func (p *Producer) runProducer() {
 
 		case brokers := <-p.watcher:
 			{
-				logs.Emergency("kafka brokers changed ")
+				fmt.Printf("[Emergency]kafka brokers changed \n")
 				// 因为broker变化
 				p.brokers = brokers
 				// 先关闭消费

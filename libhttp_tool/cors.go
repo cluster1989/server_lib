@@ -25,7 +25,7 @@ type Options struct {
 }
 
 // Cors sets CORS 对每个请求做跨域处理
-func Middleware(options Options) gin.HandlerFunc {
+func Cors(options Options) gin.HandlerFunc {
 	if options.AllowHeaders == nil {
 		options.AllowHeaders = defaultAllowHeaders
 	}

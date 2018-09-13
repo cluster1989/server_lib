@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/wuqifei/server_lib/libconf2"
-	"github.com/wuqifei/server_lib/logs"
+	// "github.com/wuqifei/server_lib/logs"
 )
 
 type Conf struct {
@@ -46,6 +46,5 @@ func TestConf(t *testing.T) {
 	}
 	b, _ := json.Marshal(c)
 	f, _ := json.Marshal(c.A)
-	logs.Debug("conf:[%s][%s] ---%s", string(b), string(f), c.A.D)
-	t.Log("test")
+	t.Logf("conf:[%s][%s] ---%s", string(b), string(f), c.A.D)
 }

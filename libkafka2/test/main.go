@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/wuqifei/server_lib/logs"
-
 	"github.com/Shopify/sarama"
 
 	"github.com/wuqifei/server_lib/libkafka2"
@@ -54,7 +52,6 @@ func consumer() {
 	c.MarkPartitionOffset("golangtest2", 0, 12, "")
 
 	for val := range c.MessageChan {
-		logs.Info("offset[%d],[%s],partition[%d]", val.Offset, string(val.Value), val.Partition)
 		c.MarkOffset(val, "")
 	}
 }

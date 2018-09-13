@@ -3,8 +3,6 @@ package signal
 import (
 	"os"
 	"os/signal"
-
-	"github.com/wuqifei/server_lib/logs"
 )
 
 // InitSignal register signals handler.
@@ -13,5 +11,4 @@ func InitSignal() {
 	defer close(chanSig)
 	signal.Notify(chanSig, os.Interrupt, os.Kill)
 	sig := <-chanSig
-	logs.Emergency("recv kill %s", sig.String())
 }

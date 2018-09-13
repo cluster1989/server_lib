@@ -1,4 +1,4 @@
-package libio
+package perf
 
 import (
 	"expvar"

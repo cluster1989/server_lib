@@ -2,10 +2,9 @@ package libtime
 
 import (
 	"container/heap"
+	"fmt"
 	"sync"
 	"time"
-
-	"github.com/wuqifei/server_lib/logs"
 )
 
 const (
@@ -78,7 +77,7 @@ func (w *TimerWheel) getLattestTimer() []*TimerTask {
 		nextFireTime := task.firetime
 		elasped := time.Since(nextFireTime).Seconds()
 		if elasped > 1.0 {
-			logs.Emergency("libtime:timer exec error with 1 second not exec")
+			fmt.Printf("libtime:timer exec error with 1 second not exec\n")
 		}
 		if elasped > 0.0 {
 			//时间未到

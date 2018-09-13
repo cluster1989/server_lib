@@ -4,8 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/wuqifei/server_lib/logs"
-
 	"github.com/garyburd/redigo/redis"
 )
 
@@ -243,7 +241,6 @@ func (r *RedisPool) IsExists(key string) bool {
 func (r *RedisPool) ExpireKey(key string, timeout time.Duration) bool {
 	_, err := r.DoRedis("Expire", key, int64(timeout/time.Second))
 	if err != nil {
-		logs.Error("redis expire key err [%v]", err)
 		return false
 	}
 	return true
@@ -287,7 +284,6 @@ func (r *RedisPool) HGETALL(key string) (map[string]interface{}, error) {
 		val := arr[i+1].([]uint8)
 		m[string(key)] = val
 
-		logs.Debug("key:[%s] val[%s]\n", key, val)
 	}
 	return m, nil
 }

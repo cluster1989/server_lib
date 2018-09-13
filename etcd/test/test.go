@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/wuqifei/server_lib/etcd"
-	"github.com/wuqifei/server_lib/logs"
 	"github.com/wuqifei/server_lib/signal"
 )
 
@@ -18,12 +18,12 @@ func main() {
 
 	e, v := etcd.Get("/test/test2", false)
 	for _, b := range v {
-		logs.Debug("etcd value:[%s] len[%d]", b, len(v))
+		fmt.Printf("etcd value:[%s] len[%d]\n", b, len(v))
 
 	}
-	logs.Debug("etcd get :value [%v]len [%d]", v, len(v))
+	fmt.Printf("etcd get :value [%v]len [%d]\n", v, len(v))
 	if e != nil {
-		logs.Debug("etcd get value error:[%v] ", e)
+		fmt.Printf("etcd get value error:[%v] \n", e)
 	}
 	//去注册
 	go etcd.Register("/abdib/kal", "127.0.0.1:1234", time.Duration(10)*time.Second, time.Duration(5)*time.Second)
@@ -33,5 +33,5 @@ func main() {
 }
 
 func watchBack(action string, key, val []byte) {
-	logs.Debug("etcdcallback:action[%s],key[%s],value[%s]", action, string(key), string(val))
+	fmt.Printf("etcdcallback:action[%s],key[%s],value[%s]\n", action, string(key), string(val))
 }

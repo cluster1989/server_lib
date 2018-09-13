@@ -3,8 +3,6 @@ package perf
 import (
 	"net/http"
 	"net/http/pprof"
-
-	"github.com/wuqifei/server_lib/logs"
 )
 
 func Init(profBind []string) {
@@ -19,11 +17,9 @@ func Init(profBind []string) {
 		go func(profaddr string) {
 			http.ListenAndServe(profaddr, pprofServeMux)
 			if err := http.ListenAndServe(profaddr, pprofServeMux); err != nil {
-				logs.Error("http.ListenAndServe(\"%s\", pprofServeMux) error(%v)", profaddr, err)
 				panic(err)
-			} else {
-				logs.Info("pprof start a http service:(%s)", profaddr)
 			}
+
 		}(addr)
 	}
 }

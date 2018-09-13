@@ -6,7 +6,6 @@ import (
 
 	"github.com/wuqifei/chat/common/rpc_model"
 	"github.com/wuqifei/server_lib/libgrpc"
-	"github.com/wuqifei/server_lib/logs"
 	"google.golang.org/grpc/grpclog"
 )
 
@@ -32,5 +31,4 @@ func main() {
 	}
 	fmt.Println(res.Uid)
 	state := client.ClientConn.GetState()
-	logs.Debug("rpc status:%s", state.String())
 }

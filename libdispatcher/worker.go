@@ -1,10 +1,10 @@
 package libdispatcher
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/wuqifei/server_lib/concurrent"
-	"github.com/wuqifei/server_lib/logs"
 )
 
 type Worker struct {
@@ -34,7 +34,7 @@ func (w *Worker) Start() {
 				// 开始任务
 				err := job.DoJobTask()
 				if err != nil {
-					logs.Error("job  task went wrong [%v]", err)
+					fmt.Printf("job  task went wrong [%v]\n", err)
 				}
 			case <-w.quit:
 				w.close()

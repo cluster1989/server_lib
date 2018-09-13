@@ -3,10 +3,10 @@ package etcd
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/wuqifei/server_lib/logs"
 )
 
 type Options struct {
@@ -51,7 +51,7 @@ func NewEtcd(options *Options) error {
 
 	client, err := clientv3.New(conf)
 	if err != nil {
-		logs.Error("ETCD:create etcd client failed,error(%v)", err)
+		fmt.Printf("ETCD:create etcd client failed,error(%v)\n", err)
 		return err
 	}
 

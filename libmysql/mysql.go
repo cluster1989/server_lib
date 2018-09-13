@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/wuqifei/server_lib/logs"
 )
 
 type Mysql struct {
@@ -35,7 +34,6 @@ func NewConf() *Options {
 // 初始化mysql
 func NewMysql(option *Options) *Mysql {
 	sqlStr := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", option.User, option.Pwd, option.Host, option.DB)
-	logs.Debug("mysql :connect [%s]", sqlStr)
 	db, err := sql.Open("mysql", sqlStr)
 	if err != nil {
 		panic(err)

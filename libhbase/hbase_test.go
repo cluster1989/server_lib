@@ -2,8 +2,6 @@ package libhbase
 
 import (
 	"testing"
-
-	"github.com/wuqifei/server_lib/logs"
 )
 
 func TestHbase(t *testing.T) {
@@ -11,10 +9,10 @@ func TestHbase(t *testing.T) {
 
 	val, _ := c.GetRow("aaa", "row1")
 	for _, v := range val {
-		logs.Debug("value:[%s]", string(v))
+		t.Logf("value:[%s]\n", string(v))
 	}
 	val, _ = c.GetWithQualifier("aaa", "row1", "vvvv", []string{"sad", "a"})
 	for _, v := range val {
-		logs.Debug("value2:[%s]", string(v))
+		t.Logf("value2:[%s]\n", string(v))
 	}
 }

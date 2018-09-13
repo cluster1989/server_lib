@@ -1,10 +1,9 @@
 package concurrent
 
 import (
+	"fmt"
 	"io"
 	"sync"
-
-	"github.com/wuqifei/server_lib/logs"
 )
 
 type ConcurrentMap struct {
@@ -38,7 +37,7 @@ func (m *ConcurrentMap) Dispose() {
 			default:
 			}
 			if err != nil {
-				logs.Error("concurrent map :dispose map error:%d", key)
+				fmt.Printf("err: concurrent map :dispose map key:%d error:%v\n", key, err)
 			}
 		}
 		m.Unlock()
@@ -61,7 +60,7 @@ func (m *ConcurrentMap) Set(key, value interface{}) {
 
 	if value == nil {
 
-		logs.Error("concurrent map :set map nil value key[%v]", key)
+		fmt.Printf("err :concurrent map :set map nil value key:%v")
 		return
 	}
 

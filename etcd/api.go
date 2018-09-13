@@ -2,9 +2,9 @@ package etcd
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/wuqifei/server_lib/logs"
 )
 
 func GetWithPrefix(serviceKey string) (err error, vals []string) {
@@ -35,7 +35,7 @@ func Set(key, val string) error {
 	putResp, err := etcdClient.Put(context.Background(), key, val)
 	if err != nil {
 
-		logs.Error("etcd:KV put failed[%v],key[%s],resp[%q]", err, key, putResp)
+		fmt.Printf("etcd:KV put failed[%v],key[%s],resp[%q]\n", err, key, putResp)
 		return err
 	}
 	return nil

@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/wuqifei/server_lib/libconf2"
-	// "github.com/wuqifei/server_lib/logs"
 )
 
 type Conf struct {

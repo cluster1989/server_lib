@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/wuqifei/server_lib/logs"
-
 	"github.com/coreos/etcd/auth/authpb"
 	"github.com/coreos/etcd/clientv3"
 )
@@ -37,7 +35,7 @@ func CreateRoleWithPermission(role string, perms []*Permission) (err error) {
 	}
 	resp, err := authClient.RoleAdd(context.TODO(), role)
 	if err != nil {
-		logs.Error("etcd:auth add role error[%v][%q]", err, resp)
+		fmt.Error("etcd:auth add role error[%v][%q]\n", err, resp)
 		return err
 	}
 

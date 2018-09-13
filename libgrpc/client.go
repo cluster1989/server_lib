@@ -1,7 +1,6 @@
 package libgrpc
 
 import (
-	"github.com/wuqifei/server_lib/logs"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -46,7 +45,6 @@ func NewClient(options *ClientOptions) *Client {
 	c.ClientConn = conn
 
 	state := conn.GetState()
-	logs.Info("rpc connect:[%s] status[%s]", options.Address, state.String())
 	return c
 
 }

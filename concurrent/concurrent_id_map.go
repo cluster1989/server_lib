@@ -1,10 +1,9 @@
 package concurrent
 
 import (
+	"fmt"
 	"io"
 	"sync"
-
-	"github.com/wuqifei/server_lib/logs"
 )
 
 const ConcurrentMapNum = 32
@@ -52,7 +51,7 @@ func (g *ConcurrentIDGroupMap) Dispose() {
 				}
 				//从group中删除
 				if err != nil {
-					logs.Error("concurrent map :dispose map error:%d", key)
+					fmt.Printf("err :concurrent map :dispose map key:%d error:%v\n", key, err)
 				}
 			}
 

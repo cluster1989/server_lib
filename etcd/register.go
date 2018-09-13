@@ -2,10 +2,10 @@ package etcd
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/wuqifei/server_lib/logs"
 )
 
 var (
@@ -31,27 +31,27 @@ func register(serviceKey string, val string, interval, ttl time.Duration) {
 			//申请租约
 			resp, err := etcdClient.Grant(context.Background(), int64(ttl/time.Second))
 			if err != nil {
-				logs.Error("etcd:grant failed[%v],key[%s],resp[%q]", err, serviceKey, resp)
+				fmt.Printf("etcd:grant failed[%v],key[%s],resp[%q]\n", err, serviceKey, resp)
 			}
 			//创建key-value 进去
 			putResp, err := etcdClient.Put(context.Background(), serviceKey, val, clientv3.WithLease(resp.ID))
 			if err != nil {
-				logs.Error("etcd:put failed[%v],key[%s],resp[%q]", err, serviceKey, putResp)
+				fmt.Printf("etcd:put failed[%v],key[%s],resp[%q]\n", err, serviceKey, putResp)
 			}
 		} else {
 			if len(vals) == 0 {
 				//申请租约
 				resp, err := etcdClient.Grant(context.Background(), int64(ttl/time.Second))
 				if err != nil {
-					logs.Error("etcd:grant failed[%v],key[%s],resp[%q]", err, serviceKey, resp)
+					fmt.Printf("etcd:grant failed[%v],key[%s],resp[%q]\n", err, serviceKey, resp)
 				}
 				//创建key-value 进去
 				putResp, err := etcdClient.Put(context.Background(), serviceKey, val, clientv3.WithLease(resp.ID))
 				if err != nil {
-					logs.Error("etcd:put failed[%v],key[%s],resp[%q]", err, serviceKey, putResp)
+					fmt.Printf("etcd:put failed[%v],key[%s],resp[%q]\n", err, serviceKey, putResp)
 				}
 			} else {
-				logs.Debug("etcd:registed key[%s] val[%v]", serviceKey, vals)
+				fmt.Printf("etcd:registed key[%s] val[%v]\n", serviceKey, vals)
 			}
 		}
 		//这里
@@ -72,6 +72,6 @@ func Unregister(serviceKey string) {
 	stopSignal = make(chan bool, 1)
 	resp, err := etcdClient.Delete(context.Background(), serviceKey)
 	if err != nil {
-		logs.Error("etcd:delete failed [%v],key[%s] resp[%q]", err, serviceKey, resp)
+		fmt.Printf("etcd:delete failed [%v],key[%s] resp[%q]\n", err, serviceKey, resp)
 	}
 }

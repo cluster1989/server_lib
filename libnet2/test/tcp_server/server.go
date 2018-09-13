@@ -16,7 +16,7 @@ var (
 func NewServer() {
 	server, _ = libnet2.New()
 
-	server.Run(2)
+	server.Run()
 	libnet2.ServerSessionBlock = func(sess libnet2.Session2Interface) {
 		fmt.Printf("sess [%d] \n", sess.GetUniqueID())
 		sess.Send([]byte("hello new connect"))

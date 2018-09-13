@@ -75,7 +75,7 @@ type LibserverInterface interface {
 	Listener() net.Listener
 
 	// 启动
-	Run(procs int)
+	Run()
 
 	// 关闭
 	Close()

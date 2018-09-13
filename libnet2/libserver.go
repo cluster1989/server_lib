@@ -76,9 +76,9 @@ func (s *defaultLibServer) Close() {
 }
 
 // 需要异步启动
-func (s *defaultLibServer) Run(procs int) {
+func (s *defaultLibServer) Run() {
 
-	for i := 0; i < procs; i++ {
+	for i := 0; i < s.serverOption.Workers; i++ {
 		go s.run()
 	}
 }

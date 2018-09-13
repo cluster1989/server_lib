@@ -53,9 +53,9 @@ func DefaultSessionOption() *SessionOption2 {
 	// 允许3次超时
 	option.ReadTimeoutTimes = 3
 	// 发送队列缓冲条数
-	option.RecvChanSize = 5
+	option.RecvChanSize = 10
 	// 接收队列缓冲条数
-	option.SendChanSize = 5
+	option.SendChanSize = 10
 
 	return option
 }
@@ -67,7 +67,7 @@ func DefaultOption() *NetOption {
 	option.Address = ":10001"
 	option.MaxConn = -1
 	option.Network = "tcp"
-	option.Workers = 1
+	option.Workers = 4
 	return option
 }
 

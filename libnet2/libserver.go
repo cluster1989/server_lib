@@ -15,7 +15,7 @@ type defaultLibServer struct {
 	sessionOption *SessionOption2
 	serverOption  *NetOption
 	errorChan     chan error
-	clientGroup   *concurrent.ConcurrentIDGroupMap
+	connCount     *concurrent.AtomicInt32
 }
 
 // 新建服务器
@@ -23,7 +23,7 @@ func newServer() *defaultLibServer {
 	s := new(defaultLibServer)
 	//  新建一个错误的通道
 	s.errorChan = make(chan error, 10)
-	s.clientGroup = concurrent.NewCocurrentIDGroup()
+	s.connCount = concurrent.NewAtomicInt32(0)
 	return s
 }
 
@@ -31,48 +31,10 @@ func (s *defaultLibServer) Listener() net.Listener {
 	return s.listener
 }
 
-// 删除某个session
-func (s *defaultLibServer) DelSession(sessID uint64) error {
-	sessInterface := s.clientGroup.Get(sessID)
-	if sessInterface == nil {
-		return nil
-	}
-	sess := sessInterface.(Session2Interface)
-	err := sess.Close()
-	s.clientGroup.Del(sessID)
-
-	SessionCloseBlock(sess)
-	return err
-}
-
-// 得到某个session
-func (s *defaultLibServer) GetSession(sessID uint64) Session2Interface {
-	sessInterface := s.clientGroup.Get(sessID)
-	if sessInterface == nil {
-		return nil
-	}
-	sess := sessInterface.(Session2Interface)
-
-	return sess
-}
-
-// 设置session
-func (s *defaultLibServer) SetSession(sess Session2Interface) {
-
-	s.clientGroup.Set(sess.GetUniqueID(), sess)
-}
-
-// 得到全部session
-func (s *defaultLibServer) GetAllSession() *concurrent.ConcurrentIDGroupMap {
-	return s.clientGroup
-}
-
 // 关闭
 func (s *defaultLibServer) Close() {
 
 	s.listener.Close()
-	//释放所有的连接
-	s.clientGroup.Dispose()
 }
 
 // 需要异步启动
@@ -89,7 +51,7 @@ func (s *defaultLibServer) run() {
 	for {
 		// 接收监听
 
-		if s.serverOption.MaxConn > 0 && s.serverOption.MaxConn < s.clientGroup.Count() {
+		if s.serverOption.MaxConn > 0 && s.serverOption.MaxConn < s.connCount.Get() {
 			// 超过最大连接，等待
 			continue
 		}
@@ -128,30 +90,11 @@ func (s *defaultLibServer) run() {
 			ServerSessionBlock(session)
 		}
 		session.onClose = func(sess Session2Interface) {
-			s.DelSession(sess.GetUniqueID())
+			s.connCount.DecrementAndGet()
 		}
 		session.onError = SessionErrorBlock
 		session.onRecv = SessionRecvBlock
 		session.Accept()
-		s.SetSession(session)
+		s.connCount.IncrementAndGet()
 	}
-}
-
-// 刷新sessionid
-func (s *defaultLibServer) UpdateSessionID(oldID, newID uint64) bool {
-
-	oldSess := s.GetSession(oldID)
-	if oldSess == nil {
-		return false
-	}
-	newSess := s.GetSession(newID)
-	if newSess != nil {
-		return false
-	}
-	s.clientGroup.Del(oldID)
-
-	sess := oldSess.(*defaultSession)
-	sess.setUniqueID(newID)
-	s.SetSession(sess)
-	return true
 }

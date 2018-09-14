@@ -3,7 +3,6 @@ package libnet2
 import (
 	"net"
 
-	"github.com/wuqifei/server_lib/concurrent"
 	"github.com/wuqifei/server_lib/libio"
 )
 
@@ -79,19 +78,4 @@ type LibserverInterface interface {
 
 	// 关闭
 	Close()
-
-	// 删除某个session
-	DelSession(sessID uint64) error
-
-	// 得到某个session
-	GetSession(sessID uint64) Session2Interface
-
-	// 设置session
-	SetSession(Session2Interface)
-
-	// 得到全部session
-	GetAllSession() *concurrent.ConcurrentIDGroupMap
-
-	// 刷新session id
-	UpdateSessionID(oldID, newID uint64) bool
 }

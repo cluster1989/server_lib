@@ -168,9 +168,8 @@ func (s *defaultSession) chanLoop() {
 	for {
 		select {
 		case msg, flag := <-s.recvChan:
-			// 没有收到数据，或者收到数据为空
 			if !flag {
-				continue
+				return
 			}
 
 			s.onRecv(s, msg)
@@ -179,7 +178,7 @@ func (s *defaultSession) chanLoop() {
 		case msg, flag := <-s.sendChan:
 
 			if !flag {
-				continue
+				return
 			}
 
 			ServerPacket.Write(s.writer, msg)
@@ -188,7 +187,7 @@ func (s *defaultSession) chanLoop() {
 			t := s.timeoutTimes.IncrementAndGet()
 			if t > int32(s.option.ReadTimeoutTimes) {
 				//直接关闭
-				break
+				return
 			}
 
 		case flag := <-s.closeChan:
@@ -204,17 +203,16 @@ func (s *defaultSession) recvLoop() {
 
 	defer s.Close()
 	for {
-
 		if ServerPacket == nil {
 			panic(errors.New("服务的解析对象不能为nil"))
 		}
 
 		data, err := ServerPacket.Read(s.reader)
-
 		if err != nil {
 
 			if err == io.EOF || err == io.ErrUnexpectedEOF {
 				// 这里表示session已经关闭
+
 				return
 			}
 
@@ -224,8 +222,11 @@ func (s *defaultSession) recvLoop() {
 			continue
 		}
 
-		if s.option.RecvChanSize > 1 {
+		if data == nil {
+			continue
+		}
 
+		if s.option.RecvChanSize > 1 {
 			s.recvChan <- data
 		} else {
 			s.onRecv(s, data)

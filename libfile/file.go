@@ -27,9 +27,13 @@ func SaveToFile(filepath string, content []byte, handle CompleteHandle) error {
 	//全部权限写入文件
 	err := ioutil.WriteFile(filepath, content, 0777)
 	if err != nil {
-		handle(nil)
+		if handle != nil {
+			handle(nil)
+		}
 	} else {
-		handle(filepath)
+		if handle != nil {
+			handle(filepath)
+		}
 	}
 	return err
 }

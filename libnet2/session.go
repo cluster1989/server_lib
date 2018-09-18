@@ -2,6 +2,7 @@ package libnet2
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -74,6 +75,9 @@ func (s *defaultSession) check() {
 
 //  发送数据
 func (s *defaultSession) Send(val []byte) error {
+	if s.closeFlag.Get() {
+		return fmt.Errorf("conn closed")
+	}
 	if ServerPacket == nil {
 		panic(errors.New("服务的解析对象不能为nil"))
 	}

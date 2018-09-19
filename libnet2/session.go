@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
@@ -214,7 +215,7 @@ func (s *defaultSession) recvLoop() {
 		data, err := ServerPacket.Read(s.reader)
 		if err != nil {
 
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
+			if err == io.EOF || err == io.ErrUnexpectedEOF || strings.Contains(err.Error(), "use of closed network connection") {
 				// 这里表示session已经关闭
 
 				return
